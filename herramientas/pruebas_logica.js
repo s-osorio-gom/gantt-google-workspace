@@ -18,7 +18,11 @@ const path = require('path');
 const vm = require('vm');
 
 const raiz = path.resolve(process.argv[2] || 'apps-script');
-const TZ = 'America/Bogota';
+// Apps Script ejecuta el código con la zona de appsscript.json como zona local
+// del runtime: new Date(...), getDate(), setHours()… la usan. Se replica aquí
+// para que el resultado no dependa de la zona de la máquina (el CI corre en UTC).
+const TZ = JSON.parse(fs.readFileSync(path.join(raiz, 'appsscript.json'), 'utf8')).timeZone;
+process.env.TZ = TZ;
 
 // ── dobles de los servicios de Apps Script ─────────────────────────────────
 function formatDate(date, zona, patron) {
