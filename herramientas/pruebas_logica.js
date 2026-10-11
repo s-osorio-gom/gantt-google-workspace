@@ -574,6 +574,28 @@ prueba('GANTT_DESDE con solo el año no corre la ventana al 31-dic', () => {
   igual([iso(w.start), iso(w.end)], ['2026-07-01', '2026-12-31']);
 });
 
+// ── recordatorio en un día que ya no es el de edición ──────────────────────
+function recordatorioJob(dia, hoy) {
+  estado.config = { ADMIN_EMAIL: 'admin@example.com', EDIT_LOCK_DAY: dia };
+  estado.efectivo = 'admin@example.com';
+  let envios = 0; const avisos = [];
+  con({ today: () => fecha(hoy), MailApp: { sendEmail: (to, asunto) => avisos.push(to + ' | ' + asunto) },
+        sendThursdayReminders: () => { envios++; return { sent: 1, total: 1 }; },
+        sendThursdayReminders_: () => { envios++; return { sent: 1, total: 1 }; } },
+      () => G('thursdayReminderJob')());
+  return { envios, avisos };
+}
+prueba('Recordatorio: si el disparador corre un día que no es EDIT_LOCK_DAY, no envía y avisa al admin', () => {
+  const r = recordatorioJob(2, '2026-10-08');                  // jueves, día de edición martes
+  igual([r.envios, r.avisos.length, /admin@example.com/.test(r.avisos[0] || '')], [0, 1, true]);
+  igual(recordatorioJob(2, '2026-10-06'), { envios: 1, avisos: [] }); // martes
+  igual(recordatorioJob(4, '2026-10-08'), { envios: 1, avisos: [] }); // jueves por defecto
+});
+prueba('Recordatorio con día de edición viernes o sábado no promete el reporte de «este» viernes 8:30', () => {
+  const r5 = recordatorio({ EDIT_LOCK_DAY: 5 }).html, r4 = recordatorio({}).html;
+  igual([/semana siguiente/.test(r5), /semana siguiente/.test(r4), /viernes 8:30/.test(r4)], [true, false, true]);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

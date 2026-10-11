@@ -177,7 +177,21 @@ function dailyDispatcherAfternoon() {
  * Jueves 8:30 — recordatorio personalizado al equipo (plazo hoy 11:59 pm).
  */
 function thursdayReminderJob() {
-  return withErrorAlert(() => sendThursdayReminders(), 'thursdayReminderJob');
+  return withErrorAlert(() => {
+    // Si EDIT_LOCK_DAY cambió y no se reinstalaron los disparadores, este corre el
+    // día viejo: no se manda «tienes plazo hoy» un día en que no se puede editar.
+    const hoy = today().getDay();
+    if (hoy !== editLockDay()) {
+      const admin = getConfig('ADMIN_EMAIL');
+      const msg = 'El recordatorio corrió el ' + _DIAS_ES[hoy] + ', pero EDIT_LOCK_DAY es ' +
+        _DIAS_ES[editLockDay()] + '. No se envió. Reinstale los disparadores: menú 🍀 EQUIPO → ' +
+        'Admin → Instalar / reinstalar disparadores.';
+      logWarn(msg);
+      if (admin) { try { MailApp.sendEmail(admin, '[EQUIPO] Recordatorio en el día equivocado', msg); } catch (_) {} }
+      return { sent: 0, skipped: true };
+    }
+    return sendThursdayReminders();
+  }, 'thursdayReminderJob');
 }
 
 /**

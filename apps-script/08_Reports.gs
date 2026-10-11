@@ -2,7 +2,7 @@
  * Reports.gs — generación y envío de los correos del sistema.
  *
  * Correos cubiertos:
- *   1. Recordatorio del jueves (thursdayReminderJob, jueves 8:30)
+ *   1. Recordatorio del día de edición (thursdayReminderJob, EDIT_LOCK_DAY 8:30)
  *   2. Ejecutivo jefe operativo / jefe del canal (fridayExecJob, viernes 8:30)
  *   3. Bienvenida (al dar de alta una persona, o a todos desde el menú)
  *   4. Individual semanal y recordatorio dominical (weeklyJob / sundayReminderJob):
@@ -612,7 +612,7 @@ function buildThursdayContext(personId, todayDate) {
   });
 }
 
-/** Envía el recordatorio del jueves a cada persona del equipo con proyectos abiertos. */
+/** Envía el recordatorio del día de edición a cada persona del equipo con proyectos abiertos. */
 function sendThursdayReminders(todayDate) {
   if (!todayDate) todayDate = today();
   const personas = getActivePersons().filter(p =>
@@ -634,7 +634,7 @@ function sendThursdayReminders(todayDate) {
     });
     if (r.ok) sent++;
   });
-  logInfo('Recordatorios jueves: ' + sent + '/' + personas.length);
+  logInfo('Recordatorios del día de edición: ' + sent + '/' + personas.length);
   return { sent: sent, total: personas.length };
 }
 
@@ -643,7 +643,7 @@ function sendThursdayReminders(todayDate) {
  * ============================================================================ */
 function sendTestIndividualToAdmin() {
   assertAdmin('enviar el correo de prueba');
-  // Envía el recordatorio del jueves de una persona de muestra, redirigido al admin.
+  // Envía el recordatorio del día de edición de una persona de muestra, redirigido al admin.
   const admin = getConfig('ADMIN_EMAIL');
   const sample = getActivePersons().find(p => toBool(p.recibe_recordatorio_domingo) && getProjectsForOwner(p.person_id).length > 0)
               || getActivePersons().find(p => toBool(p.recibe_reporte));
@@ -669,7 +669,7 @@ function _diag_sendSamplesToAdmin() {
               || getActivePersons()[0];
   const stamp = Date.now();
   sendEmailGTM({ eventType: 'sample_thursday', period: 'sample-' + stamp, realToEmail: admin, realToName: 'Admin',
-    subject: '[MUESTRA] Recordatorio del jueves', htmlBody: renderTemplate('email_recordatorio', buildThursdayContext(person.person_id)), allowDuplicate: true });
+    subject: '[MUESTRA] Recordatorio del ' + _ctxDiaEdicion().dia_edicion, htmlBody: renderTemplate('email_recordatorio', buildThursdayContext(person.person_id)), allowDuplicate: true });
   const ctxG = buildExecutiveContext(today(), false); ctxG.nombre_corto = 'el jefe operativo'; ctxG.is_jefe = false;
   sendEmailGTM({ eventType: 'sample_lider', period: 'sample-' + stamp, realToEmail: admin, realToName: 'Admin',
     subject: '[MUESTRA] Ejecutivo — el jefe operativo', htmlBody: renderTemplate('email_exec_lider', ctxG), allowDuplicate: true });

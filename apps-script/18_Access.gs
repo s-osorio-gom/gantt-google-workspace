@@ -119,8 +119,12 @@ const _DIAS_ES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes
  */
 function _ctxDiaEdicion() {
   const nombre = _DIAS_ES[editLockDay()];
+  // El ejecutivo sale el viernes 8:30: con día de edición viernes o sábado, lo
+  // cargado ese día lo ve el ejecutivo de la semana siguiente.
+  const tarde = editLockDay() >= 5;
   return { dia_edicion: nombre, dia_edicion_cap: nombre.charAt(0).toUpperCase() + nombre.slice(1),
-           bloqueo_por_dia: editLockEnabled() };
+           bloqueo_por_dia: editLockEnabled(),
+           reporte_que_lo_ve: tarde ? 'viernes de la semana siguiente, 8:30 a.m.' : 'viernes 8:30 a.m.' };
 }
 
 /** Lanza si el usuario no puede editar hoy. Usar al inicio de toda mutación del equipo. */

@@ -180,7 +180,9 @@ deja una copia oculta de cada una con fecha.
 
 La jerarquía se arma con banderas en `01_Personas`:
 
-- `recibe_reporte=TRUE`: recibe recordatorios y entra en la evaluación mensual.
+- `recibe_recordatorio_domingo=TRUE`: recibe el recordatorio del día de
+  edición (el nombre de la columna es heredado).
+- `recibe_reporte=TRUE`: entra en la evaluación mensual.
 - `recibe_reporte_jefe=TRUE`: recibe el correo ejecutivo del viernes.
 - Entre quienes reciben el ejecutivo, el **jefe del canal** —el que recibe la
   versión con detalle por persona y califica— es el `person_id` de
@@ -200,7 +202,9 @@ Verifique en `Activadores` del editor de Apps Script que estén todos.
 
 El recordatorio se programa el día `EDIT_LOCK_DAY` (jueves por defecto; el
 manejador se sigue llamando `thursdayReminderJob`). Si cambia ese día después,
-vuelva a `Instalar / reinstalar disparadores`.
+vuelva a `Instalar / reinstalar disparadores`: mientras no lo haga, el
+recordatorio no sale y el admin recibe un aviso cada vez que el disparador
+corre en el día viejo.
 
 ## 7 · Una semana en SANDBOX
 

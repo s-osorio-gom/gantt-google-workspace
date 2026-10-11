@@ -80,7 +80,7 @@ function goToResumen() {
   if (sh) getSS().setActiveSheet(sh);
 }
 
-/** Envía el recordatorio del jueves ahora (admin, respeta SANDBOX). */
+/** Envía el recordatorio del día de edición ahora (admin, respeta SANDBOX). */
 function sendThursdayNowFromMenu() {
   assertAdmin('enviar el recordatorio');
   const r = sendThursdayReminders();

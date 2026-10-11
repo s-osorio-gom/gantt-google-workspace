@@ -66,7 +66,9 @@ se guarda en `00_Config!EVAL_SHEET_ID`.
 
 ## Quién es quién en los correos
 
-- `recibe_reporte=TRUE`: recordatorio del jueves y fila en la evaluación mensual.
+- `recibe_recordatorio_domingo=TRUE`: recordatorio del día de edición
+  (`EDIT_LOCK_DAY`; el nombre de la columna es heredado).
+- `recibe_reporte=TRUE`: fila en la evaluación mensual.
 - `recibe_reporte_jefe=TRUE`: correo ejecutivo del viernes.
 - **Jefe del canal**: entre los anteriores, el `person_id` de `JEFE_CANAL_ID`
   (`00_Config`). Vacía, se usa la convención heredada: `P001` o quien tenga
@@ -90,7 +92,7 @@ servidor»).
 No es una frontera de seguridad: quien puede editar el Sheet puede abrir
 `Extensiones → Apps Script` y cambiar el código, o editar `00_Config`. Evita
 usos accidentales y desde la consola de un panel. Las funciones internas que
-corren desde los disparadores (envíos del jueves, viernes, día 1 y día 4) no
+corren desde los disparadores (recordatorio del día de edición, viernes, día 1 y día 4) no
 lo comprueban: si `ADMIN_EMAIL` cambiara después de instalar los disparadores,
 dejarían de correr.
 

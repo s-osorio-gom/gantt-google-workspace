@@ -476,7 +476,7 @@ function onPyTEdit(e) {
   // Editor desconocido (Apps Script no revela el email) → null: no queda exento del bloqueo.
   const editor = (e.user && e.user.getEmail) ? (String(e.user.getEmail() || '') || null) : null;
 
-  // bloqueo por día (equipo solo jueves; admins/supervisores cualquier día)
+  // bloqueo por día (equipo solo EDIT_LOCK_DAY; admins/supervisores cualquier día)
   if (!isEditAllowedNow(editor)) {
     e.range.setValue(e.oldValue === undefined ? false : e.oldValue);
     _toastActive('🔒 Solo puedes actualizar los ' + _DIAS_ES[editLockDay()] + '. Hoy está bloqueado.');

@@ -139,7 +139,7 @@ function setupRecurrentes() {
 }
 
 /* ============================================================================
- *  CRUD de plantillas (corre como el usuario; reglas de edición del jueves)
+ *  CRUD de plantillas (corre como el usuario; reglas del día de edición)
  * ============================================================================ */
 
 /** Lista de plantillas (para la UI). */

@@ -2,7 +2,7 @@
  * 20_Relevantes.gs — "Relevantes" semanales.
  *
  * Flujo:
- *  1) Cada persona (reglas del jueves) abre el botón "Crear relevante", escoge persona + proyecto
+ *  1) Cada persona (reglas del día de edición) abre el botón "Crear relevante", escoge persona + proyecto
  *     (o "Otro") y escribe un comentario. Se guarda en un STAGING oculto de la hoja principal
  *     (_Relevantes_IN) — porque el sidebar corre como el usuario, que NO tiene acceso al Sheet privado.
  *  2) Un proceso del DUEÑO (autoRefreshDirty, 1 min) sincroniza el staging → Sheet privado
@@ -36,7 +36,7 @@ function getRelevanteFormData() {
   };
 }
 
-/** Crea un relevante (corre como el usuario). Reglas del jueves. Va al staging. */
+/** Crea un relevante (corre como el usuario). Reglas del día de edición. Va al staging. */
 function addRelevante(payload) {
   assertCanEditNow();
   if (!payload || !payload.person_id) throw new Error('Falta la persona.');
