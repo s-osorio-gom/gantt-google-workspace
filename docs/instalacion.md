@@ -80,7 +80,8 @@ fechas de todo el sistema y la hora de los disparadores.
 
 Recargue el Sheet. Aparece el menú **🍀 EQUIPO** con una sola opción:
 `🧱 Crear pestañas base`. Crea las que falten con sus encabezados y siembra
-`00_Config` con todas las claves y su descripción. No toca pestañas que ya
+`00_Config` con todas las claves que el código lee, con su valor por defecto y
+su descripción (salvo `RECURRING_PROJECT_ID`, que escribe el sistema). No toca pestañas que ya
 existan. (También se puede correr `crearPestanasBase` desde el editor de Apps
 Script.)
 

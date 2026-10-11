@@ -412,6 +412,25 @@ prueba('Sheet nuevo sin 00_Config: crear pestañas base sigue permitido sin admi
   igual(creo, true);
 });
 
+// ── instalación: 00_Config trae todas las claves que el código lee ─────────
+prueba('crearPestanasBase siembra cada clave que lee el código, y la guía las documenta', () => {
+  const leidas = new Set();
+  archivos.forEach(f => {
+    const t = fs.readFileSync(path.join(raiz, f), 'utf8');
+    // esDia('X', n) es el atajo de dailyDispatcherMorning para getConfigInt('X', n)
+    for (const m of t.matchAll(/\b(?:getConfig(?:Int|Bool)?|esDia)\(\s*'([A-Z_]+)'/g)) leidas.add(m[1]);
+  });
+  const sembradas = new Set(G('BASE_CONFIG').map(r => r[0]));
+  const delSistema = ['RECURRING_PROJECT_ID'];   // la escribe setupRecurrentes
+  const faltan = [...leidas].filter(k => !sembradas.has(k) && delSistema.indexOf(k) < 0).sort();
+  igual(faltan, [], 'claves leídas que crearPestanasBase no siembra');
+  const guia = fs.readFileSync(path.join(raiz, '..', 'docs', 'instalacion.md'), 'utf8');
+  const documentadas = new Set();
+  guia.split('\n').filter(l => /^\| `[A-Z_]+`/.test(l))
+    .forEach(l => { for (const m of l.split('|')[1].matchAll(/`([A-Z_]+)`/g)) documentadas.add(m[1]); });
+  igual([...sembradas].filter(k => !documentadas.has(k)).sort(), [], 'claves sembradas sin documentar');
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

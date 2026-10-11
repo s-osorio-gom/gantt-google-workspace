@@ -145,6 +145,7 @@ const BASE_TABS = {
 /** Claves de 00_Config que se siembran vacías (o con su valor por defecto) para llenarlas a mano. */
 const BASE_CONFIG = [
   ['SYSTEM_MODE', 'SANDBOX', 'SANDBOX: todos los correos van al admin. PROD: a los destinatarios reales.'],
+  ['SANDBOX_REDIRECT_TO', '', 'Opcional: a quién van los correos en SANDBOX. Vacío: a ADMIN_EMAIL.'],
   ['ADMIN_EMAIL', '', 'Administrador: recibe errores y muestras. Debe ser quien instala los disparadores.'],
   ['ADMIN_EMAILS', '', 'Otros administradores, separados por coma (opcional).'],
   ['SUPERVISOR_EMAILS', '', 'Editan cualquier día, sin menú Admin. Separados por coma.'],
@@ -156,12 +157,22 @@ const BASE_CONFIG = [
   ['CONFIDENCIAL_SHEET_ID', '', 'ID del Sheet privado de jefes (histórico y relevantes).'],
   ['LOGO_FILE_ID', '', 'Opcional: ID en Drive del logo (se usa si _brand_bar.html tiene <img src="cid:logo">).'],
   ['MANUAL_USER_URL', '', 'Opcional: URL del manual de usuario.'],
+  ['SHEET_URL', '', 'Opcional: base de los enlaces de los correos. Vacío: la URL de este Sheet.'],
   ['EDIT_LOCK_ENABLED', 'TRUE', 'TRUE: el equipo solo edita el día EDIT_LOCK_DAY.'],
   ['EDIT_LOCK_DAY', '4', 'Día de edición del equipo: 0=domingo … 4=jueves … 6=sábado.'],
   ['PROJECT_DATES_LOCKED', 'TRUE', 'TRUE: solo admins y supervisores cambian fechas de proyecto.'],
+  ['TASK_RANGE_ENFORCED', 'TRUE', 'TRUE: las tareas deben caer dentro de las fechas de su proyecto.'],
+  ['BLOCKED_REQUIRES_COMMENT', 'TRUE', 'TRUE: una tarea bloqueada solo deja de contar si tiene comentario.'],
+  ['RISK_GAP_THRESHOLD_PTS', '-15', 'Puntos por debajo de lo esperado para marcar un proyecto «En riesgo».'],
+  ['DUE_SOON_DAYS', '7', 'Días antes del fin en que menos del 80 % de avance es «En riesgo».'],
   ['GANTT_DESDE', '', 'Inicio del Cronograma (yyyy-mm-dd). Vacío: semestre en curso.'],
   ['GANTT_HASTA', '', 'Fin del Cronograma (yyyy-mm-dd). Vacío: semestre en curso.'],
-  ['FESTIVOS', '', 'Festivos que se sombrean en el Cronograma: fechas yyyy-mm-dd separadas por coma.']
+  ['FESTIVOS', '', 'Festivos que se sombrean en el Cronograma: fechas yyyy-mm-dd separadas por coma.'],
+  ['MONTHLY_EVAL_DAY', '1', 'Día del mes de la evaluación y el archivo al histórico (mes más corto: el último día).'],
+  ['PERSONAL_EVAL_SEND_DAY', '4', 'Día del mes en que cada persona recibe su evaluación calificada.'],
+  ['RECURRING_TASKS_DAY', '1', 'Día del mes en que se regeneran las tareas recurrentes.'],
+  ['MOTIVATIONAL_ENABLED', 'TRUE', 'TRUE: mensaje de cierre el último día del mes.'],
+  ['SEND_WELCOME_EMAIL', 'TRUE', 'TRUE: correo de bienvenida al agregar una persona.']
 ];
 
 /**
