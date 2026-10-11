@@ -349,6 +349,40 @@ prueba('Recurrencia quincenal conserva la alternancia al cambiar de año', () =>
   igual(r.map(iso), ['2026-12-21', '2027-01-04', '2027-01-18']);
 });
 
+// ── dispatcher diario: días del mes configurados ───────────────────────────
+// Corre dailyDispatcherMorning cada día del rango y devuelve en qué fechas
+// disparó cada tarea mensual.
+function despachos(config, desde, hasta) {
+  estado.config = Object.assign({ ADMIN_EMAIL: 'admin@example.com' }, config);
+  const hechos = { eval: [], rec: [], dia4: [] };
+  let hoy = fecha(desde);
+  const fin = fecha(hasta).getTime();
+  while (hoy.getTime() <= fin) {
+    const h = hoy;
+    con({
+      today: () => h,
+      monthlyRollover: () => {}, monthlyEvalJob: () => hechos.eval.push(iso(h)),
+      generateRecurringTasks: () => hechos.rec.push(iso(h)),
+      sendPersonalEvalsDay4: () => hechos.dia4.push(iso(h))
+    }, () => G('dailyDispatcherMorning')());
+    hoy = G(`new Date(${h.getFullYear()}, ${h.getMonth()}, ${h.getDate() + 1})`);
+  }
+  return hechos;
+}
+prueba('Días del mes por defecto: evaluación y recurrentes el 1, envío personal el 4', () => {
+  const h = despachos({}, '2026-12-28', '2027-01-06');
+  igual([h.eval, h.rec, h.dia4], [['2027-01-01'], ['2027-01-01'], ['2027-01-04']]);
+});
+prueba('Día 31 configurado cae el último día de los meses cortos (28-feb, 29-feb bisiesto, 30-abr)', () => {
+  igual(despachos({ MONTHLY_EVAL_DAY: 31 }, '2027-02-01', '2027-04-30').eval,
+        ['2027-02-28', '2027-03-31', '2027-04-30']);
+  igual(despachos({ MONTHLY_EVAL_DAY: 31 }, '2028-02-01', '2028-02-29').eval, ['2028-02-29']);
+});
+prueba('Día configurado 0 o negativo se trata como 1; texto inválido usa el defecto', () => {
+  igual(despachos({ PERSONAL_EVAL_SEND_DAY: 0, RECURRING_TASKS_DAY: 'abc' }, '2027-03-01', '2027-03-31'),
+        { eval: ['2027-03-01'], rec: ['2027-03-01'], dia4: ['2027-03-01'] });
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

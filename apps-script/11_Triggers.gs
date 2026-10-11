@@ -129,21 +129,31 @@ function weeklySnapshotPre() {
 function dailyDispatcherMorning() {
   return withErrorAlert(() => {
     const d = today();
-    const day = d.getDate();
+    const esDia = (clave, defecto) => _esDiaConfigurado(d, getConfigInt(clave, defecto));
     // Día 1 del mes → archivar completados del mes anterior + eval mensual
-    if (day === getConfigInt('MONTHLY_EVAL_DAY', 1)) {
+    if (esDia('MONTHLY_EVAL_DAY', 1)) {
       try { monthlyRollover(); } catch (e) { logWarn('monthlyRollover: ' + e.message); }
       monthlyEvalJob();
     }
     // Día 1 (config RECURRING_TASKS_DAY): genera las tareas recurrentes del período. Idempotente.
-    if (day === getConfigInt('RECURRING_TASKS_DAY', 1)) {
+    if (esDia('RECURRING_TASKS_DAY', 1)) {
       try { generateRecurringTasks(); } catch (e) { logWarn('generateRecurringTasks: ' + e.message); }
     }
     // Día 4: envía a cada persona su evaluación (solo las que el jefe del canal ya calificó).
-    if (day === getConfigInt('PERSONAL_EVAL_SEND_DAY', 4)) {
+    if (esDia('PERSONAL_EVAL_SEND_DAY', 4)) {
       try { sendPersonalEvalsDay4(); } catch (e) { logWarn('sendPersonalEvalsDay4: ' + e.message); }
     }
   }, 'dailyDispatcherMorning');
+}
+
+/**
+ * ¿Es `fecha` el día `dia` de su mes? Un día mayor que los del mes (29–31 en
+ * febrero, 31 en abril…) cae el último día; uno menor que 1 cae el día 1. Antes
+ * MONTHLY_EVAL_DAY=31 no disparaba nunca en los meses cortos.
+ */
+function _esDiaConfigurado(fecha, dia) {
+  const ultimo = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
+  return fecha.getDate() === Math.min(Math.max(1, dia), ultimo);
 }
 
 /**
