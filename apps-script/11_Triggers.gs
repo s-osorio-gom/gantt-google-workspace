@@ -2,7 +2,9 @@
  * Triggers.gs — instalación / desinstalación de triggers automáticos.
  *
  * installAllTriggers() deja ocho (siete si no hay Sheet de evaluaciones):
- *   1. thursdayReminderJob      → jueves 8:30   (recordatorio al equipo)
+ *   1. thursdayReminderJob      → día EDIT_LOCK_DAY 8:30 (jueves por defecto; recordatorio al equipo)
+ *      Conserva el nombre «thursday» para no dejar huérfanos los disparadores ya instalados.
+ *      Si cambia EDIT_LOCK_DAY, reinstale los disparadores.
  *   2. fridayExecJob            → viernes 8:30  (foto semanal + ejecutivos)
  *   3. satRelevantesJob         → sábado 8:00   (relevantes comentados)
  *   4. dailyDispatcherMorning   → diario 8:30   (día 1: rollover + evaluación; día 1: recurrentes;
@@ -40,9 +42,11 @@ function installAllTriggers() {
   uninstallAllTriggers();
   let n = 0;
 
-  // 1. Jueves 8:30 — recordatorio al equipo (plazo hoy 11:59 pm)
+  // 1. Día de edición (EDIT_LOCK_DAY, jueves por defecto) 8:30 — recordatorio al equipo
+  //    (plazo hoy 11:59 pm). Antes era siempre jueves aunque el día de edición fuera otro.
+  const diasTrigger = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   ScriptApp.newTrigger('thursdayReminderJob')
-    .timeBased().onWeekDay(ScriptApp.WeekDay.THURSDAY).atHour(8).nearMinute(30)
+    .timeBased().onWeekDay(ScriptApp.WeekDay[diasTrigger[editLockDay()]]).atHour(8).nearMinute(30)
     .inTimezone(tz()).create(); n++;
 
   // 2. Viernes 8:30 — ejecutivos al jefe operativo y el jefe del canal

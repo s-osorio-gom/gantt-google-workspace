@@ -130,7 +130,7 @@ Opcionales:
 | `MANUAL_USER_URL` | — | Manual que abre `Abrir manual de usuario` (http/https) |
 | `LOGO_FILE_ID` | — | Logo en Drive; ver «Logo» abajo |
 | `EDIT_LOCK_ENABLED` | `TRUE` | El equipo solo edita el día `EDIT_LOCK_DAY` |
-| `EDIT_LOCK_DAY` | `4` | 0 = domingo … 4 = jueves … 6 = sábado |
+| `EDIT_LOCK_DAY` | `4` | 0 = domingo … 4 = jueves … 6 = sábado. El recordatorio sale ese día; si lo cambia, reinstale los disparadores |
 | `PROJECT_DATES_LOCKED` | `TRUE` | Solo admins y supervisores cambian fechas de proyecto |
 | `TASK_RANGE_ENFORCED` | `TRUE` | Las tareas deben caer dentro de las fechas de su proyecto |
 | `BLOCKED_REQUIRES_COMMENT` | `TRUE` | Una tarea bloqueada solo deja de contar si tiene comentario |
@@ -197,6 +197,10 @@ instala. Quedan ocho (siete si `EVAL_SHEET_ID` no es accesible); la lista está
 en el [README](../README.md#qué-hace-en-concreto).
 
 Verifique en `Activadores` del editor de Apps Script que estén todos.
+
+El recordatorio se programa el día `EDIT_LOCK_DAY` (jueves por defecto; el
+manejador se sigue llamando `thursdayReminderJob`). Si cambia ese día después,
+vuelva a `Instalar / reinstalar disparadores`.
 
 ## 7 · Una semana en SANDBOX
 

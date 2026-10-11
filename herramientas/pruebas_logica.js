@@ -459,6 +459,77 @@ prueba('Día 1: si la evaluación mensual falla (sin jefe del canal), las recurr
   igual(rec, 1);
 });
 
+// ── día de edición: disparador y textos ────────────────────────────────────
+// Renderizador mínimo de plantillas HtmlService: <?= x ?> escapa, <?!= x ?> no,
+// <? código ?> se ejecuta. Basta para detectar variables que faltan y textos.
+function renderizar(nombre, vars) {
+  const fuente = fs.readFileSync(path.join(raiz, nombre + '.html'), 'utf8');
+  let cuerpo = "var __o = '';\n", i = 0;
+  const re = /<\?(!=|=)?([\s\S]*?)\?>/g;
+  let m;
+  while ((m = re.exec(fuente))) {
+    cuerpo += '__o += ' + JSON.stringify(fuente.slice(i, m.index)) + ';\n';
+    if (m[1] === '=') cuerpo += '__o += __esc(' + m[2] + ');\n';
+    else if (m[1] === '!=') cuerpo += '__o += (' + m[2] + ');\n';
+    else cuerpo += m[2] + '\n';
+    i = re.lastIndex;
+  }
+  cuerpo += '__o += ' + JSON.stringify(fuente.slice(i)) + '; return __o;';
+  const html = { createHtmlOutputFromFile: (f) => ({ getContent: () => fs.readFileSync(path.join(raiz, f + '.html'), 'utf8') }) };
+  const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return con({ HtmlService: html, __esc: esc },
+    () => G('(function (__v) { with (__v) { ' + cuerpo + ' } })')(vars));
+}
+function disparadores(config) {
+  estado.config = Object.assign({ ADMIN_EMAIL: 'admin@example.com' }, config);
+  estado.efectivo = 'admin@example.com';
+  const creados = [];
+  const builder = (fn) => { const t = { fn: fn }; const b = {
+    timeBased: () => b, forSpreadsheet: () => b, onEdit: () => b, atHour: (h) => (t.hora = h, b),
+    nearMinute: () => b, inTimezone: () => b, everyDays: () => (t.diario = true, b),
+    everyMinutes: () => (t.minuto = true, b), onWeekDay: (d) => (t.dia = d, b), create: () => creados.push(t) }; return b; };
+  const dias = {}; ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'].forEach(d => dias[d] = d);
+  con({
+    ScriptApp: { newTrigger: builder, getProjectTriggers: () => [], WeekDay: dias },
+    getSS: () => ({}), getEvalSS: () => { throw new Error('sin EVAL_SHEET_ID'); }
+  }, () => G('installAllTriggers')());
+  return creados;
+}
+prueba('Disparadores por defecto: recordatorio jueves, ejecutivo viernes, relevantes sábado (7 sin Sheet de evaluaciones)', () => {
+  const t = disparadores({});
+  const dia = (fn) => (t.find(x => x.fn === fn) || {}).dia;
+  igual([t.length, dia('thursdayReminderJob'), dia('fridayExecJob'), dia('satRelevantesJob')],
+        [7, 'THURSDAY', 'FRIDAY', 'SATURDAY']);
+});
+prueba('El recordatorio se instala el día de edición (EDIT_LOCK_DAY); fuera de 0–6, jueves', () => {
+  const dia = (cfg) => disparadores(cfg).find(x => x.fn === 'thursdayReminderJob').dia;
+  igual([dia({ EDIT_LOCK_DAY: 2 }), dia({ EDIT_LOCK_DAY: 0 }), dia({ EDIT_LOCK_DAY: 9 })],
+        ['TUESDAY', 'SUNDAY', 'THURSDAY']);
+});
+function recordatorio(config) {
+  estado.config = Object.assign({ SUPPORT_EMAIL: 'ayuda@example.com' }, config);
+  G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
+  G('__datos.proyectos').push({ project_id: 'PR001', nombre: 'Proyecto <b>X</b>', owner_id: 'P002' });
+  G('__datos.tareas').push({ task_id: 'T1', project_id: 'PR001', nombre: 'Tarea vieja', owner_ids: 'P002', fecha_fin: fecha('2026-03-01') },
+                           { task_id: 'T2', project_id: 'PR001', nombre: 'Tarea nueva', owner_ids: 'P002', fecha_fin: fecha('2026-04-01') });
+  const c = con({ urlToSheet: () => 'https://example.com/hoja' },
+    () => G('buildThursdayContext')('P002', fecha('2026-03-10')));
+  return { c, html: renderizar('email_recordatorio', c) };
+}
+prueba('Recordatorio: renderiza, escapa nombres y dice el día de edición configurado', () => {
+  const r = recordatorio({ EDIT_LOCK_DAY: 2 });
+  igual([r.c.n_atrasadas, /martes/.test(r.html), /jueves/i.test(r.html), r.html.indexOf('<b>X</b>') < 0],
+        [1, true, false, true]);
+  igual(/jueves/.test(recordatorio({}).html), true);
+});
+prueba('Bienvenida: dice el día de edición, o que se edita cualquier día si no hay bloqueo', () => {
+  const vars = (cfg) => { estado.config = cfg; return Object.assign(G('_ctxDiaEdicion')(), {
+    nombre_corto: 'Ana', nombre: 'Ana', rol: 'Analista', link_sheet: '#', link_manual: '#', support_email: 'a@example.com' }); };
+  const martes = renderizar('email_bienvenida', vars({ EDIT_LOCK_DAY: 2 }));
+  const libre = renderizar('email_bienvenida', vars({ EDIT_LOCK_ENABLED: false }));
+  igual([/martes/.test(martes), /jueves/i.test(martes), /cualquier día/.test(libre)], [true, false, true]);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

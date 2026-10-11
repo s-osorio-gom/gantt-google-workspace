@@ -88,7 +88,11 @@ function assertAdmin(accion) {
 }
 
 function editLockEnabled() { return getConfigBool('EDIT_LOCK_ENABLED', true); }
-function editLockDay() { return getConfigInt('EDIT_LOCK_DAY', 4); } // 0=domingo … 4=jueves
+/** Día de edición del equipo: 0=domingo … 4=jueves. Fuera de 0–6 se usa el jueves. */
+function editLockDay() {
+  const d = getConfigInt('EDIT_LOCK_DAY', 4);
+  return (d >= 0 && d <= 6) ? d : 4;
+}
 
 /** ¿Las fechas de proyecto están bloqueadas a solo admins/supervisores? (candado reversible por config). */
 function projectDatesLocked() { return getConfigBool('PROJECT_DATES_LOCKED', true); }
@@ -107,6 +111,17 @@ function isEditAllowedNow(email) {
 }
 
 const _DIAS_ES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+/**
+ * Variables de texto del día de edición para correos y avisos: el recordatorio
+ * sale ese día y los textos lo nombran (antes decían «jueves» aunque
+ * EDIT_LOCK_DAY fuera otro).
+ */
+function _ctxDiaEdicion() {
+  const nombre = _DIAS_ES[editLockDay()];
+  return { dia_edicion: nombre, dia_edicion_cap: nombre.charAt(0).toUpperCase() + nombre.slice(1),
+           bloqueo_por_dia: editLockEnabled() };
+}
 
 /** Lanza si el usuario no puede editar hoy. Usar al inicio de toda mutación del equipo. */
 function assertCanEditNow(email) {

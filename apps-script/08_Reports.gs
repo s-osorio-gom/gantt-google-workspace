@@ -417,14 +417,14 @@ function sendWelcomeEmail(personId) {
   const person = getPersonById(personId);
   if (!person) throw new Error('No existe persona ' + personId);
 
-  const ctx = {
+  const ctx = Object.assign(_ctxDiaEdicion(), {
     nombre_corto: person.nombre.split(' ')[0],
     nombre: person.nombre,
     rol: person.rol,
     link_sheet: urlToSheet(SHEET_NAMES.INICIO),
     link_manual: getConfig('MANUAL_USER_URL') || urlToSheet(SHEET_NAMES.INICIO),
     support_email: getConfig('SUPPORT_EMAIL') || 'admin@example.com'
-  };
+  });
   const html = renderTemplate('email_bienvenida', ctx);
   return sendEmailGTM({
     eventType: 'welcome',
@@ -592,7 +592,7 @@ function buildThursdayContext(personId, todayDate) {
     };
   }).sort((a, b) => a._sort - b._sort);
 
-  return {
+  return Object.assign(_ctxDiaEdicion(), {
     nombre_corto: person.nombre.split(' ')[0],
     nombre: person.nombre,
     today_display: fmtDateHuman(todayDate),
@@ -603,7 +603,7 @@ function buildThursdayContext(personId, todayDate) {
     proximas: pend.filter(t => !t.vencida),
     link_tasks: urlToSheet('Proyectos y Tareas'),
     support_email: getConfig('SUPPORT_EMAIL') || 'admin@example.com'
-  };
+  });
 }
 
 /** Envía el recordatorio del jueves a cada persona del equipo con proyectos abiertos. */
@@ -623,7 +623,7 @@ function sendThursdayReminders(todayDate) {
       period: period,
       realToEmail: p.email,
       realToName: p.nombre,
-      subject: 'Actualiza tus proyectos hoy — plazo jueves 11:59 pm',
+      subject: 'Actualiza tus proyectos hoy — plazo ' + _ctxDiaEdicion().dia_edicion + ' 11:59 pm',
       htmlBody: html
     });
     if (r.ok) sent++;
@@ -649,7 +649,7 @@ function sendTestIndividualToAdmin() {
     period: 'test-' + new Date().getTime(),
     realToEmail: admin,
     realToName: 'Admin',
-    subject: '[PRUEBA] Recordatorio del jueves · ' + sample.nombre,
+    subject: '[PRUEBA] Recordatorio del ' + _ctxDiaEdicion().dia_edicion + ' · ' + sample.nombre,
     htmlBody: html,
     allowDuplicate: true
   });
@@ -683,10 +683,10 @@ function _diag_renderEmails() {
   const ctxG = buildExecutiveContext(today(), false); ctxG.nombre_corto = 'el jefe operativo'; ctxG.is_jefe = false;
   out.lider = renderTemplate('email_exec_lider', ctxG).length;
   out.jueves = renderTemplate('email_recordatorio', buildThursdayContext(person.person_id)).length;
-  out.bienvenida = renderTemplate('email_bienvenida', {
+  out.bienvenida = renderTemplate('email_bienvenida', Object.assign(_ctxDiaEdicion(), {
     nombre_corto: 'X', nombre: 'X', rol: 'Analista', link_sheet: '#', link_manual: '#',
     support_email: 'persona@example.com'
-  }).length;
+  })).length;
   out.relevantes = renderTemplate('email_relevantes', {
     nombre_corto: 'X', nombre: 'X', today_display: fmtDateHuman(today()), support_email: 'persona@example.com',
     items: [{ tipo: 'Proyecto', proyecto: 'Proyecto de ejemplo', relevante: 'Se avanzó con la definición del alcance.', comentario: 'Buen trabajo, sigue así.' }]

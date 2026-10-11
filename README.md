@@ -19,7 +19,7 @@ Disparadores que deja `Instalar / reinstalar disparadores` (zona horaria de
 
 | Cuándo | Qué pasa |
 |---|---|
-| Jueves 8:30 | Recordatorio a cada persona con sus tareas pendientes y atrasadas |
+| Día de edición (`EDIT_LOCK_DAY`, jueves por defecto) 8:30 | Recordatorio a cada persona con sus tareas pendientes y atrasadas |
 | Viernes 8:30 | Foto semanal (`06_Snapshots`) + correo ejecutivo a los jefes + limpia comentarios semanales |
 | Sábado 8:00 | A cada persona, sus «relevantes» de la semana que el jefe operativo ya comentó |
 | Día 1 del mes, 8:30 | Archiva al histórico los proyectos completados el mes anterior, prepara la evaluación en el Sheet **privado** y le escribe al jefe del canal; genera las tareas recurrentes |
@@ -198,8 +198,10 @@ Lista completa en [`docs/instalacion.md`](docs/instalacion.md#4--llenar-00_confi
 - Hay un solo «jefe del canal» (quien recibe el ejecutivo con detalle y
   califica): `JEFE_CANAL_ID` o, vacía, `P001` / un rol con «canal». Ver
   [`docs/arquitectura.md`](docs/arquitectura.md#quién-es-quién-en-los-correos).
-- Los correos llevan textos fijos en español (jueves, viernes, «jefe
-  operativo»); cambiar el día de edición no reescribe esos textos.
+- Los correos están en español y algunos textos son fijos (viernes del
+  ejecutivo, «jefe operativo»). El día de edición sí se toma de
+  `EDIT_LOCK_DAY`; al cambiarlo, reinstale los disparadores para que el
+  recordatorio se mueva.
 - Las funciones `_diag_*` y `_demo*` son de diagnóstico para `clasp run` o el
   editor: `_demoFechas*` **sobrescribe fechas** de proyectos y tareas.
 

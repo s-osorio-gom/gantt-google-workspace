@@ -54,7 +54,7 @@ function onOpen() {
     adminMenu.addItem('📨 Enviar relevantes comentados', 'enviarRelevantesDesdeMenu');
     adminMenu.addItem('📋 Enviar evaluaciones calificadas', 'enviarEvaluacionesDesdeMenu');
     adminMenu.addItem('📧 Enviar prueba (a mí)', 'sendTestIndividualToAdmin');
-    adminMenu.addItem('📧 Recordatorio del jueves (ahora)', 'sendThursdayNowFromMenu');
+    adminMenu.addItem('📧 Recordatorio del día de edición (ahora)', 'sendThursdayNowFromMenu');
     adminMenu.addItem('📧 Ejecutivos del viernes (ahora)', 'sendExecNowFromMenu');
     adminMenu.addItem('📧 Enviar bienvenida a TODO el equipo', 'sendWelcomeToAllFromMenu');
     adminMenu.addSeparator();
@@ -84,7 +84,7 @@ function goToResumen() {
 function sendThursdayNowFromMenu() {
   assertAdmin('enviar el recordatorio');
   const r = sendThursdayReminders();
-  SpreadsheetApp.getUi().alert('Recordatorio del jueves enviado',
+  SpreadsheetApp.getUi().alert('Recordatorio enviado',
     'Enviados: ' + r.sent + ' de ' + r.total + (isSandboxMode() ? '\n\n(SANDBOX: los correos van al admin)' : ''),
     SpreadsheetApp.getUi().ButtonSet.OK);
 }
@@ -315,7 +315,8 @@ function switchToProd() {
     ui.ButtonSet.YES_NO);
   if (r !== ui.Button.YES) return;
   setConfigValue('SYSTEM_MODE', 'PROD');
-  ui.alert('Sistema en modo PROD. Próximo envío automático: lunes 8:30 AM.');
+  ui.alert('Sistema en modo PROD. Los correos salen a los destinatarios reales desde el próximo ' +
+    'disparador (recordatorio: ' + _ctxDiaEdicion().dia_edicion + ' 8:30; ejecutivo: viernes 8:30).');
 }
 
 /**
