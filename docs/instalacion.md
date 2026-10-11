@@ -137,7 +137,7 @@ Opcionales:
 | `RISK_GAP_THRESHOLD_PTS` | `-15` | Puntos por debajo de lo esperado para marcar «En riesgo» |
 | `DUE_SOON_DAYS` | `7` | Días antes del fin en que < 80 % de avance es «En riesgo» |
 | `GANTT_DESDE`, `GANTT_HASTA` | semestre en curso | Ventana del Cronograma (`yyyy-mm-dd`, máximo 2 años) |
-| `FESTIVOS` | — | Fechas `yyyy-mm-dd` separadas por coma que el Cronograma sombrea |
+| `FESTIVOS` | — | Fechas `yyyy-mm-dd` separadas por coma que el Cronograma sombrea; lo que no sea una fecha completa se ignora y `99_Validaciones` lo avisa |
 | `MONTHLY_EVAL_DAY` | `1` | Día del mes de la evaluación y el archivo al histórico (si el mes es más corto, el último día; igual para los dos siguientes) |
 | `PERSONAL_EVAL_SEND_DAY` | `4` | Día del mes en que cada persona recibe su evaluación |
 | `RECURRING_TASKS_DAY` | `1` | Día del mes en que se regeneran las recurrentes |

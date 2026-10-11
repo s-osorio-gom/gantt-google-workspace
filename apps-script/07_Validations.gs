@@ -75,6 +75,8 @@ function runValidations() {
 
     const avisoJefe = avisoJefeCanal(personas);
     if (avisoJefe) issues.push(avisoJefe);
+    const avisoFest = avisoFestivos();
+    if (avisoFest) issues.push(avisoFest);
 
     // Proyectos
     const projects = getAllProjects();

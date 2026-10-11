@@ -551,6 +551,26 @@ prueba('Anti-duplicado dentro de la misma ejecución: mismo destinatario y perio
   igual(envios([['a@example.com', 'W1'], ['a@example.com', 'W1'], ['a@example.com', 'W2']]).mandados.length, 2);
 });
 
+// ── fragmentos que no son fechas en 00_Config ──────────────────────────────
+prueba('FESTIVOS: un año suelto o texto alrededor no sombrea días falsos', () => {
+  estado.config = { FESTIVOS: '2026-12-25, 2026' };
+  igual(Object.keys(G('_festivos')()), ['2026-12-25']);
+  estado.config = { FESTIVOS: 'Festivos 2026: 2026-12-25' };
+  igual(Object.keys(G('_festivos')()), ['2026-12-25']);
+});
+prueba('FESTIVOS: los fragmentos ignorados se avisan en 99_Validaciones', () => {
+  estado.config = { FESTIVOS: 'Festivos 2026: 2026-12-25, 2026-02-30' };
+  const a = G('avisoFestivos')();
+  igual([a !== null, a && /Festivos/.test(a.problema) && /2026-02-30/.test(a.problema)], [true, true]);
+  estado.config = { FESTIVOS: '2026-12-25; 2026-12-08' };
+  igual(G('avisoFestivos')(), null);
+});
+prueba('GANTT_DESDE con solo el año no corre la ventana al 31-dic', () => {
+  estado.config = { GANTT_DESDE: '2027', GANTT_HASTA: '2027-04-30' };
+  const w = G('ganttWindow')(fecha('2026-10-11'));
+  igual([iso(w.start), iso(w.end)], ['2026-07-01', '2026-12-31']);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

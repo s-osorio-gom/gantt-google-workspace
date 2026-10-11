@@ -642,16 +642,46 @@ var _MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto',
  * Antes era una lista fija de festivos de un país para jul–dic 2026.
  */
 function _festivos() {
-  const out = {};
-  // Una sola fecha escrita en la celda, Sheets la guarda como fecha: String(Date)
-  // la partía en palabras y el año suelto acababa sombreando el 31 de diciembre.
+  return _parseFestivos().fechas;
+}
+
+/**
+ * Lee FESTIVOS: fechas yyyy-mm-dd separadas por coma, punto y coma o espacio.
+ * Una sola fecha en la celda llega como Date (Sheets la convierte). Cualquier
+ * otro fragmento se ignora y se informa: antes «2026» suelto se interpretaba
+ * como 1-ene UTC y sombreaba el 31-dic del año anterior.
+ */
+function _parseFestivos() {
+  const fechas = {}, ignorados = [];
   const raw = getConfig('FESTIVOS');
   const partes = raw instanceof Date ? [raw] : String(raw || '').split(/[,;\s]+/);
   partes.forEach(s => {
-    const iso = _toISO(s instanceof Date ? s : String(s).trim());
-    if (_isoValida(iso)) out[iso] = true;
+    if (s === '' || s === null || s === undefined) return;
+    const iso = _fechaConfigISO(s);
+    if (iso) fechas[iso] = true; else ignorados.push(String(s));
   });
-  return out;
+  return { fechas: fechas, ignorados: ignorados };
+}
+
+/** Aviso para 99_Validaciones si FESTIVOS tiene fragmentos que no son fechas (o null). */
+function avisoFestivos() {
+  let ign = [];
+  try { ign = _parseFestivos().ignorados; } catch (e) { return null; }
+  if (!ign.length) return null;
+  return {nivel: 'WARNING', hoja: SHEET_NAMES.CONFIG, fila: 0,
+    problema: 'FESTIVOS tiene fragmentos que no son fechas yyyy-mm-dd y se ignoran: ' + ign.join(', '),
+    sugerencia: 'Deje solo fechas yyyy-mm-dd separadas por coma (ej. 2026-12-08, 2026-12-25).'};
+}
+
+/**
+ * Fecha de 00_Config como 'yyyy-mm-dd', o '' si no es una fecha completa que
+ * exista. Acepta Date (Sheets convierte lo que parece fecha) o texto
+ * yyyy-mm-dd exacto; nunca interpreta un año suelto ni texto libre.
+ */
+function _fechaConfigISO(v) {
+  if (v instanceof Date) return isNaN(v.getTime()) ? '' : fmtDateISO(v);
+  const s = String(v === null || v === undefined ? '' : v).trim();
+  return _isoValida(s) ? s : '';
 }
 
 /** ¿Es 'yyyy-mm-dd' una fecha que existe? (rechaza 2026-02-30 o 2027-02-29). */
@@ -670,8 +700,8 @@ function _isoValida(s) {
  */
 function ganttWindow(hoy) {
   const ref = hoy || today();
-  const desde = _toISO(getConfig('GANTT_DESDE') || '');
-  const hasta = _toISO(getConfig('GANTT_HASTA') || '');
+  const desde = _fechaConfigISO(getConfig('GANTT_DESDE'));
+  const hasta = _fechaConfigISO(getConfig('GANTT_HASTA'));
   const okIso = _isoValida;
   const local = s => { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
   if (okIso(desde) && okIso(hasta) && desde <= hasta) {
