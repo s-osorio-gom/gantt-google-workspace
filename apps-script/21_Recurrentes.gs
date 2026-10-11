@@ -308,8 +308,10 @@ function _recInstanceStarts(freq, start, end, dias, winStart, winEnd) {
   const dom = S.getDate();
   const startMonday = _mondayOf(S);
   let d = new Date(lo);
+  // Tope de seguridad del bucle: la ventana del Gantt admite hasta 731 días
+  // (ganttWindow). Con 400 se cortaban las repeticiones del segundo año.
   let guard = 0;
-  while (d.getTime() <= hi.getTime() && guard < 400) {
+  while (d.getTime() <= hi.getTime() && guard < 800) {
     let hit = false;
     if (freq === 'mensual') {
       const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();

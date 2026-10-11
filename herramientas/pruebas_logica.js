@@ -331,6 +331,24 @@ prueba('GANTT_DESDE imposible no corre la ventana: se usa el semestre en curso',
   igual([iso(w.start), iso(w.end)], ['2026-07-01', '2026-12-31']);
 });
 
+// ── recurrencias en los extremos ───────────────────────────────────────────
+prueba('Recurrencia semanal en una ventana de 2 años llega hasta el final', () => {
+  const r = G('_recInstanceStarts')('semanal', fecha('2027-01-01'), fecha('2028-12-31'), [1],
+                                    fecha('2027-01-01'), fecha('2028-12-31'));
+  igual([r.length, iso(r[0]), iso(r[r.length - 1])], [104, '2027-01-04', '2028-12-25']);
+});
+prueba('Recurrencia mensual el día 29: 28-feb en año normal, 29-feb en bisiesto', () => {
+  const r = G('_recInstanceStarts')('mensual', fecha('2027-01-29'), fecha('2028-03-31'), [],
+                                    fecha('2027-01-01'), fecha('2028-12-31'));
+  const feb = r.map(iso).filter(x => x.slice(5, 7) === '02');
+  igual(feb, ['2027-02-28', '2028-02-29']);
+});
+prueba('Recurrencia quincenal conserva la alternancia al cambiar de año', () => {
+  const r = G('_recInstanceStarts')('quincenal', fecha('2026-12-21'), fecha('2027-01-31'), [1],
+                                    fecha('2026-07-01'), fecha('2027-06-30'));
+  igual(r.map(iso), ['2026-12-21', '2027-01-04', '2027-01-18']);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);
