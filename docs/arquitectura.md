@@ -121,10 +121,11 @@ reintenta, quien ya recibió no recibe dos veces. El periodo se compara como
 texto: Sheets convierte `2026-06` en fecha al guardarlo, y se normaliza al
 leerlo. La foto de `06_Snapshots` se deduplica por semana (`snapshot_week`).
 
-Lo que se envía en `SANDBOX` no consume el envío real: las evaluaciones no
-pasan a `ENVIADO` ni los relevantes a `enviado=TRUE` mientras el modo sea
-`SANDBOX` (el correo fue al admin, no a la persona). Al pasar a `PROD`, el
-siguiente envío los entrega.
+Lo que se envía en `SANDBOX` no consume el envío real de las evaluaciones: no
+pasan a `ENVIADO` mientras el modo sea `SANDBOX` (el correo fue al admin, no a
+la persona), y al pasar a `PROD` el siguiente envío las entrega. Los relevantes
+enviados en `SANDBOX` quedan `enviado=SANDBOX`: no se le reenvían al admin cada
+sábado y tampoco salen en `PROD` (son de la etapa de pruebas).
 
 ## Concurrencia
 

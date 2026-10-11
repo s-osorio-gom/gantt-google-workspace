@@ -86,15 +86,16 @@ function enviarRelevantesComentados() {
   let confid;
   try { confid = getConfidSS(); } catch (e) { return { sent: 0, error: e.message }; }
   const rows = readSheetObjectsFrom(confid, 'Relevantes')
-    .filter(r => String(r.comentario_lider || '').trim() !== '' && !toBool(r.enviado));
+    .filter(r => String(r.comentario_lider || '').trim() !== '' && _relevantePendiente(r.enviado));
   if (!rows.length) return { sent: 0 };
   // agrupar por persona
   const byPerson = {};
   rows.forEach(r => { (byPerson[r.person_id] = byPerson[r.person_id] || []).push(r); });
   const rel = confid.getSheetByName('Relevantes');
   const colMap = {}; REL_HEADERS.forEach((h, i) => colMap[h] = i + 1);
-  // En SANDBOX el correo va al admin: no se marca enviado, o en PROD la persona no lo
-  // recibiría nunca. El log (separado por modo) evita repetirlo en la misma semana.
+  // En SANDBOX el correo va al admin y la fila queda enviado='SANDBOX': no se le
+  // reenvía al admin cada sábado ni le llega a la persona al pasar a PROD (lo
+  // comentado durante las pruebas no es para ella). PROD marca TRUE.
   const sandbox = isSandboxMode();
   let sent = 0;
   Object.keys(byPerson).forEach(pid => {
@@ -116,8 +117,8 @@ function enviarRelevantesComentados() {
       subject: 'Comentarios a tus relevantes de la semana', htmlBody: html, allowDuplicate: !sandbox
     });
     if (res.ok) {
-      if (!sandbox) byPerson[pid].forEach(r => {
-        rel.getRange(r._rowIndex, colMap['enviado']).setValue('TRUE');
+      byPerson[pid].forEach(r => {
+        rel.getRange(r._rowIndex, colMap['enviado']).setValue(sandbox ? 'SANDBOX' : 'TRUE');
         rel.getRange(r._rowIndex, colMap['fecha_comentario']).setValue(fmtDateHuman(today()));
       });
       sent++;
@@ -125,6 +126,12 @@ function enviarRelevantesComentados() {
   });
   logInfo('Relevantes comentados enviados a ' + sent + ' personas');
   return { sent: sent };
+}
+
+/** Pendiente de envío: `enviado` vacío o FALSE. TRUE (PROD) y SANDBOX ya se trataron. */
+function _relevantePendiente(enviado) {
+  const m = String(enviado === null || enviado === undefined ? '' : enviado).trim().toUpperCase();
+  return m === '' || m === 'FALSE';
 }
 
 /**
@@ -155,6 +162,6 @@ function enviarRelevantesDesdeMenu() {
   const r = enviarRelevantesComentados();
   SpreadsheetApp.getUi().alert('Relevantes comentados',
     'Enviados a ' + (r.sent || 0) + ' persona(s)' + (r.error ? ('\n\n' + r.error) : '') +
-    (isSandboxMode() ? '\n\n(SANDBOX: van al admin y no se marcan como enviados)' : ''),
+    (isSandboxMode() ? '\n\n(SANDBOX: van al admin y quedan marcados enviado=SANDBOX; no se reenvían en PROD)' : ''),
     SpreadsheetApp.getUi().ButtonSet.OK);
 }

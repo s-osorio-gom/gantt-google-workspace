@@ -263,27 +263,36 @@ prueba('Evaluación enviada en PROD sí queda ENVIADO', () => {
   const { r, marcas } = evalDia4('PROD');
   igual([r.sent, marcas], [1, ['estado=ENVIADO']]);
 });
-function relevantesSabado(modo) {
+// Relevantes: en SANDBOX se marcan aparte (enviado='SANDBOX'). Así no se le
+// reenvían al admin todos los acumulados cada sábado, y al pasar a PROD nadie
+// recibe de golpe lo comentado durante las pruebas. (En H1 la prueba exigía no
+// marcar nada en SANDBOX: eso producía justamente esa acumulación.)
+function relevantesSabado(modo, enviado) {
   estado.config = { SYSTEM_MODE: modo, ADMIN_EMAIL: 'admin@example.com' };
   G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
   const escrituras = [], envios = [];
   const hoja = { getRange: (f, c) => ({ setValue: (v) => escrituras.push([f, c, v]) }) };
-  con({
+  const dobles = {
     getConfidSS: () => ({ getSheetByName: () => hoja }),
     readSheetObjectsFrom: () => [{ _rowIndex: 5, person_id: 'P002', tipo: 'Otro', relevante: 'r',
-      comentario_lider: 'ok', enviado: 'FALSE', semana: '2026-W45' }],
+      comentario_lider: 'ok', enviado: enviado === undefined ? 'FALSE' : enviado, semana: '2026-W45' }],
     renderTemplate: () => '',
     sendEmailGTM: (o) => { envios.push(o); return { ok: true }; }
-  }, () => G('enviarRelevantesComentados')());
-  return { escrituras, envios };
+  };
+  dobles.sendEmailGTM_ = dobles.sendEmailGTM;
+  con(dobles, () => G(ctx.enviarRelevantesComentados_ ? 'enviarRelevantesComentados_' : 'enviarRelevantesComentados')());
+  return { escrituras, envios, marcas: escrituras.map(e => e[2]) };
 }
-prueba('Relevantes enviados en SANDBOX no quedan enviado=TRUE', () => {
-  const { escrituras, envios } = relevantesSabado('SANDBOX');
-  igual([envios.length, escrituras.length, envios[0].allowDuplicate], [1, 0, false]);
+prueba('Relevantes en SANDBOX: se envían una vez y quedan marcados SANDBOX, no TRUE', () => {
+  const r = relevantesSabado('SANDBOX');
+  igual([r.envios.length, r.marcas.indexOf('SANDBOX') >= 0, r.marcas.indexOf('TRUE') >= 0], [1, true, false]);
+  igual(relevantesSabado('SANDBOX', 'SANDBOX').envios.length, 0);   // el sábado siguiente no se repiten
 });
-prueba('Relevantes enviados en PROD sí quedan enviado=TRUE', () => {
-  const { escrituras } = relevantesSabado('PROD');
-  igual(escrituras.map(e => e[2]).indexOf('TRUE') >= 0, true);
+prueba('Relevantes en PROD: solo los pendientes; nunca los ya enviados en SANDBOX', () => {
+  const r = relevantesSabado('PROD');
+  igual([r.envios.length, r.marcas.indexOf('TRUE') >= 0], [1, true]);
+  igual(relevantesSabado('PROD', 'SANDBOX').envios.length, 0);
+  igual(relevantesSabado('PROD', '').envios.length, 1);
 });
 
 // ── instalación: el contenedor de recurrentes siempre tiene responsable ────
