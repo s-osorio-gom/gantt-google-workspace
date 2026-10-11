@@ -2,32 +2,36 @@
 
 ## Los 21 módulos
 
-| Módulo | Líneas | Responsabilidad |
-|---|---:|---|
-| `01_Utils.gs` | 373 | Acceso al Sheet, mapa de columnas, zona horaria, bloqueos, log, helpers compartidos |
-| `02_Config.gs` | 141 | Lectura cacheada de `00_Config`, modo SANDBOX/PROD, dominio de correo |
-| `03_Personas.gs` | 148 | Altas, bajas y consulta de personas |
-| `04_Proyectos.gs` | 254 | Proyectos y cálculo de estado, avance y alertas |
-| `05_Tareas.gs` | 475 | Tareas binarias, PERT y disparador de edición |
-| `06_Snapshots.gs` | 78 | Foto semanal, solo se agrega, una por semana |
-| `07_Validations.gs` | 229 | Chequeo de salud; bloquea envíos si algo crítico falla |
-| `08_Reports.gs` | 693 | Recordatorios, correos ejecutivos y bienvenida; envío con anti-duplicado |
-| `09_Evaluations.gs` | 320 | Evaluación mensual sobre el Sheet privado |
-| `10_Motivational.gs` | 90 | Mensaje de cierre de mes, frase rotativa |
-| `11_Triggers.gs` | 210 | Instalación de los ocho disparadores y sus manejadores |
-| `12_UI.gs` | 379 | Menú, paneles laterales, pestañas base y acciones de administración |
-| `13_MyComment.gs` | 71 | Comentario semanal de quien está usando el Sheet |
-| `14_Reorg.gs` | 268 | Siembra y reorganización del equipo (equipo de ejemplo) |
-| `15_Calendar.gs` | 118 | Sincronización con Google Calendar |
-| `16_Vistas.gs` | 1021 | Vistas calculadas: Resumen, Proyectos y Tareas, Cronograma, Gantt filtrado |
-| `17_ProjectManager.gs` | 127 | Soporte del editor de proyectos y tareas |
-| `18_Access.gs` | 190 | Quién puede ver y hacer qué; bloqueo de edición por día |
-| `19_Historico.gs` | 294 | Histórico privado, rollover mensual y vista de logros |
-| `20_Relevantes.gs` | 155 | Lo relevante de la semana y el comentario del jefe operativo |
-| `21_Recurrentes.gs` | 417 | Tareas que se repiten |
+| Módulo | Responsabilidad |
+|---|---|
+| `01_Utils.gs` | Acceso al Sheet, mapa de columnas, zona horaria, bloqueos, log, helpers compartidos |
+| `02_Config.gs` | Lectura cacheada de `00_Config`, modo SANDBOX/PROD, dominio de correo |
+| `03_Personas.gs` | Altas, bajas y consulta de personas |
+| `04_Proyectos.gs` | Proyectos y cálculo de estado, avance y alertas |
+| `05_Tareas.gs` | Tareas binarias, PERT y disparador de edición |
+| `06_Snapshots.gs` | Foto semanal, solo se agrega, una por semana |
+| `07_Validations.gs` | Chequeo de salud; bloquea envíos si algo crítico falla |
+| `08_Reports.gs` | Recordatorios, correos ejecutivos y bienvenida; envío con anti-duplicado |
+| `09_Evaluations.gs` | Evaluación mensual sobre el Sheet privado |
+| `10_Motivational.gs` | Mensaje de cierre de mes, frase rotativa |
+| `11_Triggers.gs` | Instalación de los ocho disparadores, sus manejadores y el dispatcher diario |
+| `12_UI.gs` | Menú, paneles laterales, pestañas base y acciones de administración |
+| `13_MyComment.gs` | Comentario semanal de quien está usando el Sheet |
+| `14_Reorg.gs` | Siembra y reorganización del equipo (equipo de ejemplo) |
+| `15_Calendar.gs` | Sincronización con Google Calendar |
+| `16_Vistas.gs` | Vistas calculadas: Resumen, Proyectos y Tareas, Cronograma, Gantt filtrado |
+| `17_ProjectManager.gs` | Soporte del editor de proyectos y tareas |
+| `18_Access.gs` | Quién puede ver y hacer qué; bloqueo de edición por día |
+| `19_Historico.gs` | Histórico privado, rollover mensual y vista de logros |
+| `20_Relevantes.gs` | Lo relevante de la semana y el comentario del jefe operativo |
+| `21_Recurrentes.gs` | Tareas que se repiten |
 
 Parciales HTML: `_styles` y `_brand_bar` (correos), `_sidebar_styles` y
 `_sidebar_utils` (paneles; el segundo trae `esc()` para escapar datos).
+
+Paneles: `sidebar_project_manager` (ventana grande: proyectos y tareas),
+`sidebar_add_project` y `sidebar_add_person` (Admin), `sidebar_relevante`,
+`sidebar_recurrentes`, `sidebar_gantt_filtro` y `sidebar_my_comment`.
 
 ## Estado de un proyecto, por precedencia
 

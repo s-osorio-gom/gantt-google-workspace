@@ -43,6 +43,40 @@ Tareas** (proyecto y sus tareas, con casilla para completar), **Cronograma**
 (Gantt diario con fines de semana y festivos), **Gantt filtrado** y **EQUIPO —
 Logros** (proyectos completados).
 
+## Arquitectura en una página
+
+Todos los `.gs` comparten un único ámbito global (así funciona Apps Script);
+el orden numérico es solo para leerlos por capas:
+
+| Capa | Módulos | Qué hace |
+|---|---|---|
+| Base | `01_Utils`, `02_Config`, `18_Access` | Leer/escribir el Sheet por nombre de columna, zona horaria, `withLock`, log; `00_Config` con caché; quién es admin y el bloqueo por día |
+| Datos | `03_Personas`, `04_Proyectos`, `05_Tareas`, `21_Recurrentes` | Altas y ediciones con sus reglas; estado y avance de un proyecto; PERT; recurrencias |
+| Procesos | `06_Snapshots`, `07_Validations`, `08_Reports`, `09_Evaluations`, `10_Motivational`, `19_Historico`, `20_Relevantes`, `15_Calendar` | Foto semanal, chequeo de salud, correos con anti-duplicado, evaluación, archivo mensual, calendario |
+| Entrada | `11_Triggers`, `12_UI`, `13_MyComment`, `14_Reorg`, `16_Vistas`, `17_ProjectManager` | Disparadores, menú y paneles, vistas calculadas (Resumen, Cronograma…) |
+| Presentación | `email_*.html`, `sidebar_*.html`, `_*.html` | 9 correos, 7 paneles y 4 parciales (estilos y `esc()`) |
+
+**Un día cualquiera**, con los disparadores instalados (hora de
+`appsscript.json`):
+
+```
+cada minuto  autoRefreshDirty ─ si alguien editó: Resumen, Logros y relevantes → Sheet privado
+08:30        dailyDispatcherMorning
+               día MONTHLY_EVAL_DAY (1)       archivo al histórico + evaluación al jefe del canal
+               día RECURRING_TASKS_DAY (1)    regenera las recurrentes
+               día PERSONAL_EVAL_SEND_DAY (4) envía las evaluaciones ya calificadas
+08:30        día EDIT_LOCK_DAY (jueves)  thursdayReminderJob → recordatorio a cada persona
+08:30        viernes   fridayExecJob → 99_Validaciones (bloquea si hay críticos) + foto + ejecutivos
+08:00        sábado    satRelevantesJob → relevantes que el jefe operativo ya comentó
+16:00        dailyDispatcherAfternoon → si es el último día del mes, mensaje de cierre
+al editar    onSheetEdit (casilla ✔ completa la tarea) · onEvalSheetEdit (marca LISTO)
+```
+
+Todo envío pasa por `sendEmailGTM()`: respeta `SANDBOX`, registra en
+`08_Email_Log` y no repite `(tipo, periodo, destinatario, modo)`. Detalle de
+reglas (estado de un proyecto, permisos, idempotencia, fechas) en
+[`docs/arquitectura.md`](docs/arquitectura.md).
+
 ## Las decisiones que lo sostienen
 
 **IDs estables, nunca nombres.** `P001`, `PR001`, `T0001`. Si alguien cambia de
@@ -79,12 +113,19 @@ festivos salen de `00_Config` y de `01_Personas`. El equipo de ejemplo de
 
 ## Requisitos
 
-- Una cuenta de Google Workspace (con `@gmail.com` funciona casi todo, con un
-  cupo de correos diarios mucho menor).
-- Node.js y [`clasp`](https://github.com/google/clasp) para subir el código.
-- Python 3.9+ y Node.js para el verificador (sin dependencias externas).
-- Que la organización permita los alcances OAuth de `appsscript.json`
-  (`script.send_mail` y `calendar` suelen requerir aprobación de TI).
+- **Cuenta:** Google Workspace (recomendado). Con `@gmail.com` funciona casi
+  todo, con un cupo de correos diarios y de ejecución de disparadores mucho
+  menor.
+- **Quién instala:** la cuenta que será `ADMIN_EMAIL`. Los disparadores corren
+  y envían correo como quien los instala.
+- **Permisos OAuth** (los 7 de `appsscript.json`, cada uno con uso en el
+  código; tabla en [`docs/instalacion.md`](docs/instalacion.md#0--requisitos)).
+  `script.send_mail` y `calendar` suelen requerir aprobación de TI en cuentas
+  corporativas: pídala antes de empezar.
+- **Tres Sheets:** el del equipo y dos privados (evaluaciones; histórico y
+  relevantes de jefes).
+- **Local:** Node.js y [`clasp`](https://github.com/google/clasp) para subir el
+  código; Python 3.9+ y Node.js para el verificador (sin dependencias).
 
 ## Instalar
 
@@ -113,7 +154,7 @@ Déjelo en `SANDBOX` una semana antes de pasar a `PROD`.
 > puede interpretar el portapapeles con otra codificación y romper el UTF-8: los
 > acentos quedan como `√≥`. Por eso `clasp`.
 
-## Verificar antes de subir
+## Qué se verifica sin Google, y qué no
 
 ```bash
 python3 herramientas/verificar_apps_script.py apps-script
@@ -124,7 +165,7 @@ python3 herramientas/verificar_apps_script.py apps-script
   [OK  ] Cada <script> de los paneles parsea — 8 / 8
   [OK  ] Cada plantilla referenciada existe — 16 / 16 referencias
   [OK  ] Sin plantillas huérfanas — 20 en uso
-  [OK  ] Ninguna función definida dos veces — 284 funciones
+  [OK  ] Ninguna función definida dos veces — 287 funciones
   [OK  ] Menús, disparadores y paneles llaman funciones que existen — todas resuelven
   [OK  ] Menú Admin comprueba admin en el servidor — 20 / 20 con assertAdmin()
   [OK  ] innerHTML de los paneles sin datos sin escapar — todo pasa por esc()
@@ -132,30 +173,42 @@ python3 herramientas/verificar_apps_script.py apps-script
   [OK  ] appsscript.json válido — 7 permisos · V8 · America/Bogota
   [OK  ] Sin correos fuera de los de ejemplo — dominios permitidos: …
   [OK  ] Sin identificadores de Sheets o Drive en el código — limpio
-  [OK  ] Pruebas de lógica (pruebas_logica.js) — 25 / 25 pruebas pasan
+  [OK  ] Pruebas de lógica (pruebas_logica.js) — 55 / 55 pruebas pasan
 ```
 
 Sale con código 1 si algún chequeo crítico falla; el workflow
 `.github/workflows/verificar.yml` corre lo mismo en cada push y pull request.
+El resultado no depende de la zona horaria de la máquina (las pruebas usan la
+de `appsscript.json`, como Apps Script).
 
-Apps Script no avisa de casi nada hasta que el disparador corre a las 8:30 y
-el correo no sale. Esto adelanta lo comprobable:
+**`herramientas/pruebas_logica.js`** (`node herramientas/pruebas_logica.js
+apps-script`) carga todos los `.gs` en un solo contexto de Node con dobles de
+`Session`, `Utilities`, `LockService`, `ScriptApp`, `MailApp` y `HtmlService`,
+y datos en memoria en lugar del Sheet. Cubre:
 
-- **Funciones duplicadas.** Todos los archivos de un proyecto de Apps Script
-  comparten un único ámbito global. Dos funciones con el mismo nombre en
-  archivos distintos no producen ningún error: gana la del archivo que se
-  cargue de último, en silencio.
-- **Referencias rotas.** Un elemento de menú, un disparador o un
-  `google.script.run.x()` que apunta a una función inexistente solo falla
-  cuando alguien hace clic.
-- **`herramientas/pruebas_logica.js`** carga todos los `.gs` en un solo
-  contexto de Node con dobles mínimos de `Session`, `Utilities` y
-  `LockService`, y prueba la lógica que no depende de la API: estado de un
-  proyecto, PERT, recurrencias, permisos, ventana del Gantt y anti-duplicados.
-  Se puede correr sola: `node herramientas/pruebas_logica.js apps-script`.
+- estado de un proyecto, PERT, semana ISO y cambio de año;
+- recurrencias (fin de mes, 29 de febrero, quincenal entre años, ventana de 2
+  años) y días del mes configurados (29–31 en meses cortos);
+- ventana del Gantt y `FESTIVOS` (texto, lista, fecha única, fechas
+  imposibles);
+- permisos (admin, supervisor, correo vacío, menú Admin);
+- anti-duplicado y que lo enviado en `SANDBOX` no consuma el envío en `PROD`;
+- los disparadores que instala `installAllTriggers` y su día;
+- que `crearPestanasBase` siembre todas las claves que el código lee y que la
+  guía las documente;
+- el renderizado del recordatorio y la bienvenida (con un intérprete mínimo de
+  plantillas, no el `HtmlService` real).
 
-Lo que **no** cubre: nada de esto toca Google. El Sheet, Gmail, Calendar y los
-disparadores solo se prueban de verdad con la semana en `SANDBOX`.
+**Lo que no se comprueba aquí:** nada que toque Google. Ni el Sheet real, ni
+Gmail, Calendar o Drive, ni que los disparadores corran a su hora, ni los
+permisos OAuth de su organización, ni las cuotas. Eso solo se prueba en el
+Sheet, con la semana en `SANDBOX` que pide la guía.
+
+Por qué vale la pena igual: Apps Script no avisa de casi nada hasta que el
+disparador corre y el correo no sale. Dos funciones con el mismo nombre en
+archivos distintos no dan error (gana la que se cargue de último), y un menú o
+`google.script.run` que apunta a una función inexistente solo falla al hacer
+clic.
 
 ## Configuración
 
@@ -202,6 +255,8 @@ Lista completa en [`docs/instalacion.md`](docs/instalacion.md#4--llenar-00_confi
   ejecutivo, «jefe operativo»). El día de edición sí se toma de
   `EDIT_LOCK_DAY`; al cambiarlo, reinstale los disparadores para que el
   recordatorio se mueva.
+- `weeklyJob` (correo individual semanal) y `sundayReminderJob` siguen en el
+  código pero `installAllTriggers` no los programa.
 - Las funciones `_diag_*` y `_demo*` son de diagnóstico para `clasp run` o el
   editor: `_demoFechas*` **sobrescribe fechas** de proyectos y tareas.
 
@@ -222,8 +277,9 @@ weekly reminders and executive emails, a drawn daily Gantt, confidential
 monthly reviews kept in a separate private Sheet, recurring tasks, and no-code
 sidebars to edit people, projects and tasks. SANDBOX mode, idempotent sending,
 stable IDs, column-name lookups. Ships a pre-deploy verifier (syntax, template
-and function references, duplicate globals, unescaped `innerHTML`) and Node
-tests for the pure logic. Docs in Spanish.
+and function references, duplicate globals, unescaped `innerHTML`, server-side
+admin checks) and Node tests for the pure logic. Nothing here touches Google:
+Sheets, Gmail, Calendar and triggers are only tested in a real SANDBOX week. Docs in Spanish.
 
 ## Licencia
 
