@@ -530,6 +530,27 @@ prueba('Bienvenida: dice el día de edición, o que se edita cualquier día si n
   igual([/martes/.test(martes), /jueves/i.test(martes), /cualquier día/.test(libre)], [true, false, true]);
 });
 
+// ── anti-duplicado del log de correos ──────────────────────────────────────
+function envios(lista, modo) {
+  estado.config = { SYSTEM_MODE: modo || 'PROD', ADMIN_EMAIL: 'admin@example.com' };
+  let lecturas = 0; const mandados = [];
+  G('_cacheEmailLog = null');
+  con({
+    readSheetAsObjects: () => { lecturas++; return { rows: [] }; },
+    logEvent: () => {}, MailApp: { sendEmail: (to) => mandados.push(to) }
+  }, () => lista.forEach(([to, periodo]) => G('sendEmailGTM')({ eventType: 'x', period: periodo,
+    realToEmail: to, realToName: to, subject: 's', htmlBody: '' })));
+  G('_cacheEmailLog = null');
+  return { lecturas, mandados };
+}
+prueba('Envío masivo: el log de correos se lee una vez por ejecución, no una por correo', () => {
+  const r = envios([['a@example.com', 'W1'], ['b@example.com', 'W1'], ['c@example.com', 'W1']]);
+  igual([r.lecturas, r.mandados.length], [1, 3]);
+});
+prueba('Anti-duplicado dentro de la misma ejecución: mismo destinatario y periodo no se repite', () => {
+  igual(envios([['a@example.com', 'W1'], ['a@example.com', 'W1'], ['a@example.com', 'W2']]).mandados.length, 2);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

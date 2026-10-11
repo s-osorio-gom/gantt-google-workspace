@@ -31,6 +31,9 @@ function renderTemplate(templateName, vars) {
   return tpl.evaluate().getContent();
 }
 
+/** Filas de 08_Email_Log leídas en esta ejecución (anti-duplicado); null = sin leer. */
+let _cacheEmailLog = null;
+
 /**
  * Envía un correo respetando modo SANDBOX, registra en log, evita duplicados.
  */
@@ -40,10 +43,11 @@ function sendEmailGTM(opts) {
   const finalTo = resolveRecipient(opts.realToEmail);
   const subject = subjectPrefix() + opts.subject;
 
-  // Evitar duplicados
+  // Evitar duplicados. El log se lee una vez por ejecución (no una por correo:
+  // un envío masivo releía entero un log que solo crece).
   if (!opts.allowDuplicate) {
-    const log = readSheetAsObjects(SHEET_NAMES.EMAIL_LOG).rows;
-    const dup = log.find(r => r.event_type === opts.eventType &&
+    if (!_cacheEmailLog) _cacheEmailLog = readSheetAsObjects(SHEET_NAMES.EMAIL_LOG).rows;
+    const dup = _cacheEmailLog.find(r => r.event_type === opts.eventType &&
                               logPeriodKey(r.period) === String(opts.period) &&
                               r.destinatario_email === opts.realToEmail &&
                               r.status === 'OK' &&
@@ -68,6 +72,8 @@ function sendEmailGTM(opts) {
   try {
     MailApp.sendEmail(finalTo, subject, '', mailOpts);
     logEvent(opts.eventType, opts.period, opts.realToEmail, opts.realToName, subject, 'OK', mode, '');
+    if (_cacheEmailLog) _cacheEmailLog.push({ event_type: opts.eventType, period: opts.period,
+      destinatario_email: opts.realToEmail, status: 'OK', mode: mode });
     return { ok: true };
   } catch (e) {
     logEvent(opts.eventType, opts.period, opts.realToEmail, opts.realToName, subject, 'FAIL', mode, e.message);
