@@ -36,7 +36,7 @@ from pathlib import Path
 
 # Cualquier literal que nombre una plantilla, la llame quien la llame. Buscar
 # solo las APIs de HtmlService deja fuera las que pasan por un helper propio
-# —aquí, `_sidebar('sidebar_add_task')`— y las reporta como huérfanas.
+# —aquí, `_sidebar('sidebar_relevante')`— y las reporta como huérfanas.
 REF_PLANTILLA = re.compile(r"""['"]((?:email|sidebar)_[A-Za-z0-9_\-]+)['"]""")
 DEF_FUNCION = re.compile(r"^\s*function\s+([A-Za-z_$][\w$]*)\s*\(", re.M)
 CORREO = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")

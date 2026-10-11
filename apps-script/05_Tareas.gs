@@ -57,21 +57,6 @@ function getTasksCompletedByOwnerInRange(personId, fromDate, toDate) {
 }
 
 /**
- * Cuenta tareas no terminadas y no actualizadas en los últimos N días.
- */
-function getStaleTasksForOwner(personId, days) {
-  if (!days) days = getConfigInt('STALE_DAYS', 14);
-  const limit = new Date(today().getTime() - days * 24 * 60 * 60 * 1000);
-  return getTasksForOwner(personId).filter(t => {
-    if (toBool(t.completada)) return false;
-    if (toBool(t.bloqueado)) return false; // bloqueadas no son "stale"
-    // Si tiene fecha_fin pasada y no está completada → considerada stale
-    const ff = t.fecha_fin ? new Date(t.fecha_fin) : null;
-    return ff && ff < limit;
-  });
-}
-
-/**
  * Devuelve resumen de movimiento esta semana en un proyecto:
  * { closed_this_week: [tarea], total_done: N, total_tasks: N }
  */
@@ -347,36 +332,6 @@ function updateTask(payload) {
 
     return { ok: true };
   });
-}
-
-/**
- * Devuelve lista de tareas (id + nombre + proyecto) para sidebars.
- */
-function getTasksForUI(filterByActiveProjects) {
-  const projs = getAllProjects();
-  const activeProjIds = projs.filter(p => p.estado_manual !== 'Archivado').map(p => p.project_id);
-  return getAllTasks()
-    .filter(t => !filterByActiveProjects || activeProjIds.indexOf(t.project_id) >= 0)
-    .map(t => {
-      const proj = projs.find(p => p.project_id === t.project_id);
-      return {
-        id: t.task_id,
-        nombre: t.nombre,
-        project_id: t.project_id,
-        project_name: proj ? proj.nombre : '?',
-        owner_ids: t.owner_ids,
-        owner_names: ownerIdsToNames(t.owner_ids),
-        fecha_inicio: fmtDateISO(t.fecha_inicio),
-        fecha_fin: fmtDateISO(t.fecha_fin),
-        peso: t.peso,
-        comentario: t.comentario || '',
-        completada: toBool(t.completada),
-        t_optimista: t.t_optimista || '',
-        t_probable: t.t_probable || '',
-        t_pesimista: t.t_pesimista || '',
-        pert_horas: t.pert_horas || ''
-      };
-    });
 }
 
 /**

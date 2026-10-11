@@ -243,10 +243,6 @@ function openAddProjectSidebar() {
   assertAdmin('crear proyectos desde el menú Admin');
   _sidebar('sidebar_add_project', '➕ Agregar proyecto', 360);
 }
-function openEditProjectSidebar() { _sidebar('sidebar_edit_project', '✏️ Editar proyecto', 380); }
-function openArchiveProjectSidebar() { _sidebar('sidebar_archive_project', '🗑️ Archivar proyecto', 360); }
-function openAddTaskSidebar() { _sidebar('sidebar_add_task', '➕ Agregar tarea', 380); }
-function openEditTaskSidebar() { _sidebar('sidebar_edit_task', '✏️ Editar tarea', 380); }
 
 /** El editor de proyecto va como VENTANA GRANDE (diálogo), no panel chico. */
 function openProjectManagerSidebar() {
@@ -351,24 +347,6 @@ function showSystemStatus() {
     'Proyectos activos (no archivados, no cerrados): ' + activeProjects
   ].join('\n');
   SpreadsheetApp.getUi().alert('Estado del sistema', msg, SpreadsheetApp.getUi().ButtonSet.OK);
-}
-
-/* ============================================================================
- *  ENVIAR PRODUCCIÓN ahora (confirmación doble)
- * ============================================================================ */
-function sendProductionNowConfirm() {
-  const ui = SpreadsheetApp.getUi();
-  if (isSandboxMode()) {
-    ui.alert('Estás en modo SANDBOX. Los correos se redirigirán al admin. Para enviar a destinatarios reales, cambia a modo PROD primero.');
-  }
-  const r = ui.alert('Enviar reportes ahora',
-    '¿Disparar el job semanal completo ahora? (snapshot + correos individuales + ejecutivos)',
-    ui.ButtonSet.YES_NO);
-  if (r !== ui.Button.YES) return;
-  const result = weeklyJob();
-  ui.alert('Envío completado',
-    'Individuales: ' + result.individuales + '\nEjecutivos: ' + result.ejecutivos,
-    ui.ButtonSet.OK);
 }
 
 /* ============================================================================

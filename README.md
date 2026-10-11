@@ -121,10 +121,10 @@ python3 herramientas/verificar_apps_script.py apps-script
 
 ```
   [OK  ] Cada .gs parsea como JavaScript — 21 / 21
-  [OK  ] Cada <script> de los paneles parsea — 12 / 12
-  [OK  ] Cada plantilla referenciada existe — 20 / 20 referencias
-  [OK  ] Sin plantillas huérfanas — 24 en uso
-  [OK  ] Ninguna función definida dos veces — 288 funciones
+  [OK  ] Cada <script> de los paneles parsea — 8 / 8
+  [OK  ] Cada plantilla referenciada existe — 16 / 16 referencias
+  [OK  ] Sin plantillas huérfanas — 20 en uso
+  [OK  ] Ninguna función definida dos veces — 284 funciones
   [OK  ] Menús, disparadores y paneles llaman funciones que existen — todas resuelven
   [OK  ] Menú Admin comprueba admin en el servidor — 20 / 20 con assertAdmin()
   [OK  ] innerHTML de los paneles sin datos sin escapar — todo pasa por esc()
@@ -206,7 +206,7 @@ Lista completa en [`docs/instalacion.md`](docs/instalacion.md#4--llenar-00_confi
 ## Estructura
 
 ```
-apps-script/        21 módulos .gs · 9 correos · 11 paneles · 4 parciales · appsscript.json
+apps-script/        21 módulos .gs · 9 correos · 7 paneles · 4 parciales · appsscript.json
 herramientas/       verificador previo al despliegue + pruebas de lógica en Node
 docs/               instalación y arquitectura
 ```
