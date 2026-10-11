@@ -121,6 +121,7 @@ Opcionales:
 | Clave | Por defecto | Qué hace |
 |---|---|---|
 | `ADMIN_EMAILS` | — | Más administradores, separados por coma |
+| `JEFE_CANAL_ID` | P001 o rol con «canal» | `person_id` del jefe del canal: recibe el ejecutivo con detalle y califica la evaluación |
 | `SUPERVISOR_EMAILS` | — | Editan cualquier día, sin menú Admin |
 | `SANDBOX_REDIRECT_TO` | `ADMIN_EMAIL` | A quién van los correos en SANDBOX |
 | `SENDER_NAME` | `Sistema de Proyectos` | Remitente visible |
@@ -182,8 +183,11 @@ La jerarquía se arma con banderas en `01_Personas`:
 - `recibe_reporte=TRUE`: recibe recordatorios y entra en la evaluación mensual.
 - `recibe_reporte_jefe=TRUE`: recibe el correo ejecutivo del viernes.
 - Entre quienes reciben el ejecutivo, el **jefe del canal** —el que recibe la
-  versión con detalle por persona y califica— es `P001` o quien tenga un rol
-  que contenga «canal». Los demás reciben la versión del jefe operativo.
+  versión con detalle por persona y califica— es el `person_id` de
+  `JEFE_CANAL_ID`. Si la deja vacía: `P001` o quien tenga un rol que contenga
+  «canal». Los demás reciben la versión del jefe operativo. Si nadie cumple,
+  `99_Validaciones` lo avisa y el día 1 el admin recibe un correo de error en
+  lugar de la evaluación.
 
 ## 6 · Instalar los disparadores
 
@@ -225,7 +229,7 @@ Cuando los tres estén bien, `Admin → Modo PROD`. No deja pasar si
 | No aparece el menú Admin | Su correo no está en `ADMIN_EMAIL`/`ADMIN_EMAILS`, o Google no lo revela (cuenta de otro dominio). |
 | No llega ningún correo | `SYSTEM_MODE` sigue en `SANDBOX`, o `99_Validaciones` está bloqueando. |
 | Llegan dos correos iguales | Hay disparadores duplicados, quizá instalados por dos cuentas. Bórrelos y reinstale desde el menú con `ADMIN_EMAIL`. |
-| «No se encontró jefe del canal» | Nadie con `recibe_reporte_jefe=TRUE` es `P001` ni tiene «canal» en el rol. |
+| «No se encontró jefe del canal» | Nadie con `recibe_reporte_jefe=TRUE` es `JEFE_CANAL_ID` (o, vacía, `P001` / rol con «canal»). |
 | Falla al leer un Sheet privado | `EVAL_SHEET_ID` o `CONFIDENCIAL_SHEET_ID` vacío, o el archivo no está compartido con quien ejecuta. |
 | «Solo puedes actualizar los jueves» | Bloqueo por día (`EDIT_LOCK_*`). Admins y supervisores están exentos. |
 | Error de permisos al instalar | La organización bloquea alcances de OAuth. Es cosa de TI, no del código. |

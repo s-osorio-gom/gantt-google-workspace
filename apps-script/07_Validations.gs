@@ -73,6 +73,9 @@ function runValidations() {
       }
     });
 
+    const avisoJefe = avisoJefeCanal(personas);
+    if (avisoJefe) issues.push(avisoJefe);
+
     // Proyectos
     const projects = getAllProjects();
     const projIds = new Set();
@@ -179,6 +182,18 @@ function runValidations() {
   const warnings = issues.filter(i => i.nivel === 'WARNING').length;
   logInfo('Validaciones: ' + critical + ' críticos, ' + warnings + ' warnings');
   return { critical: critical, warnings: warnings, issues: issues };
+}
+
+/**
+ * Aviso si hay jefes (recibe_reporte_jefe) pero ninguno es el jefe del canal: el
+ * ejecutivo con detalle no le llegaría a nadie y la evaluación mensual no saldría.
+ */
+function avisoJefeCanal(personas) {
+  const jefes = personas.filter(p => toBool(p.activo) && toBool(p.recibe_reporte_jefe));
+  if (!jefes.length || jefes.some(esJefeCanal)) return null;
+  return {nivel: 'WARNING', hoja: '01_Personas', fila: 0,
+    problema: 'Ningún jefe activo con recibe_reporte_jefe=TRUE es el jefe del canal.',
+    sugerencia: 'Ponga su person_id en JEFE_CANAL_ID de 00_Config (o use P001 / un rol con «canal»).'};
 }
 
 /**

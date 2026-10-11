@@ -195,9 +195,9 @@ Lista completa en [`docs/instalacion.md`](docs/instalacion.md#4--llenar-00_confi
   cuenta de quien los usa.
 - El disparador de cada minuto consume cuota diaria de ejecución de
   disparadores; en cuentas `@gmail.com` el cupo es menor.
-- La identificación del «jefe del canal» (quien recibe el ejecutivo con ranking
-  y califica) es por convención: `recibe_reporte_jefe=TRUE` y `person_id` `P001`
-  o un rol que contenga «canal». Ver [`docs/arquitectura.md`](docs/arquitectura.md).
+- Hay un solo «jefe del canal» (quien recibe el ejecutivo con detalle y
+  califica): `JEFE_CANAL_ID` o, vacía, `P001` / un rol con «canal». Ver
+  [`docs/arquitectura.md`](docs/arquitectura.md#quién-es-quién-en-los-correos).
 - Los correos llevan textos fijos en español (jueves, viernes, «jefe
   operativo»); cambiar el día de edición no reescribe esos textos.
 - Las funciones `_diag_*` y `_demo*` son de diagnóstico para `clasp run` o el

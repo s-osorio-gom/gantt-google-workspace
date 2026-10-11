@@ -152,6 +152,7 @@ const BASE_CONFIG = [
   ['SUPPORT_EMAIL', '', 'Correo de soporte que aparece en el pie de los correos.'],
   ['EMAIL_DOMAIN', '', 'Dominio admitido al dar de alta una persona (ej. example.org).'],
   ['SENDER_NAME', 'Sistema de Proyectos', 'Remitente visible de los correos.'],
+  ['JEFE_CANAL_ID', '', 'Opcional: person_id del jefe del canal (ejecutivo con detalle y evaluación). Vacío: P001 o rol con «canal».'],
   ['EVAL_SHEET_ID', '', 'ID del Sheet privado de evaluaciones.'],
   ['EVAL_SHEET_URL', '', 'URL del Sheet privado de evaluaciones (para el correo al jefe).'],
   ['CONFIDENCIAL_SHEET_ID', '', 'ID del Sheet privado de jefes (histórico y relevantes).'],

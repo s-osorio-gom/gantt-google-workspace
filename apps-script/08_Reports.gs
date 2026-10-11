@@ -391,7 +391,7 @@ function sendExecutiveReports(todayDate) {
   const period = getWeekId(todayDate);
   let sent = 0;
   jefes.forEach(jefe => {
-    const isTopBoss = jefe.person_id === 'P001' || (jefe.rol || '').toLowerCase().indexOf('canal') >= 0;
+    const isTopBoss = esJefeCanal(jefe);
     const ctx = buildExecutiveContext(todayDate, isTopBoss);
     ctx.nombre_corto = jefe.nombre.split(' ')[0];
     ctx.is_jefe = isTopBoss;

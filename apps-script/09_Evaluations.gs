@@ -135,9 +135,12 @@ function sendMonthlyEvalEmailToBoss(monthDate) {
   const month = monthDate.getMonth() + 1;
   const monthName = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][month - 1];
 
-  const jefe = getActivePersons().find(p => toBool(p.recibe_reporte_jefe) &&
-    (p.person_id === 'P001' || (p.rol || '').toLowerCase().indexOf('canal') >= 0));
-  if (!jefe) { logWarn('No se encontró jefe del canal para evaluación'); return; }
+  const jefe = getActivePersons().find(p => toBool(p.recibe_reporte_jefe) && esJefeCanal(p));
+  if (!jefe) {
+    // Antes solo quedaba en el registro de ejecución: nadie se enteraba de que la evaluación no salió.
+    throw new Error('No se encontró jefe del canal para la evaluación mensual: defina JEFE_CANAL_ID en ' +
+      '00_Config (o P001 / rol con «canal») entre quienes tienen recibe_reporte_jefe=TRUE.');
+  }
 
   const personas = getActivePersons().filter(p => toBool(p.recibe_reporte));
   const monthEnd = new Date(year, month, 0);
@@ -288,7 +291,7 @@ function sendPersonalEvaluationEmail(fila) {
   const person = getPersonById(fila.person_id);
   if (!person) throw new Error('Persona no encontrada: ' + fila.person_id);
   const evaluator = getPersonByEmail(fila.evaluador_email) ||
-                    getActivePersons().find(p => (p.rol || '').toLowerCase().indexOf('canal') >= 0);
+                    getActivePersons().find(p => esJefeCanal(p));
   const evaluatorName = evaluator ? evaluator.nombre : (fila.evaluador_email || 'Jefe del canal');
 
   const monthName = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][Number(fila.month) - 1];

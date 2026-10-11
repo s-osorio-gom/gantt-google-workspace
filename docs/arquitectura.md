@@ -64,13 +64,12 @@ se guarda en `00_Config!EVAL_SHEET_ID`.
 
 - `recibe_reporte=TRUE`: recordatorio del jueves y fila en la evaluación mensual.
 - `recibe_reporte_jefe=TRUE`: correo ejecutivo del viernes.
-- **Jefe del canal**: entre los anteriores, `P001` o quien tenga «canal» en el
-  rol. Recibe `email_exec_jefe` (todos los proyectos, detalle por persona) y la
-  evaluación mensual para calificar. El resto recibe `email_exec_lider`.
-
-Es una convención heredada del despliegue original; si su jerarquía es otra,
-el lugar para cambiarla es `sendExecutiveReports()` (`08_Reports.gs`) y
-`sendMonthlyEvalEmailToBoss()` (`09_Evaluations.gs`).
+- **Jefe del canal**: entre los anteriores, el `person_id` de `JEFE_CANAL_ID`
+  (`00_Config`). Vacía, se usa la convención heredada: `P001` o quien tenga
+  «canal» en el rol. Recibe `email_exec_jefe` (todos los proyectos, detalle por
+  persona) y la evaluación mensual para calificar. El resto recibe
+  `email_exec_lider`. La regla vive en un solo lugar, `esJefeCanal()`
+  (`03_Personas.gs`); `99_Validaciones` avisa si ningún jefe la cumple.
 
 ## Permisos
 

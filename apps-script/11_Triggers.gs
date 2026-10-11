@@ -133,7 +133,8 @@ function dailyDispatcherMorning() {
     // Día 1 del mes → archivar completados del mes anterior + eval mensual
     if (esDia('MONTHLY_EVAL_DAY', 1)) {
       try { monthlyRollover(); } catch (e) { logWarn('monthlyRollover: ' + e.message); }
-      monthlyEvalJob();
+      // monthlyEvalJob ya avisa al admin por correo si falla; que no corte lo que sigue.
+      try { monthlyEvalJob(); } catch (e) { logWarn('monthlyEvalJob: ' + e.message); }
     }
     // Día 1 (config RECURRING_TASKS_DAY): genera las tareas recurrentes del período. Idempotente.
     if (esDia('RECURRING_TASKS_DAY', 1)) {

@@ -431,6 +431,34 @@ prueba('crearPestanasBase siembra cada clave que lee el código, y la guía las 
   igual([...sembradas].filter(k => !documentadas.has(k)).sort(), [], 'claves sembradas sin documentar');
 });
 
+// ── jefe del canal ─────────────────────────────────────────────────────────
+const J1 = { person_id: 'P001', nombre: 'Uno', rol: 'Jefe operativo', activo: true, recibe_reporte_jefe: true };
+const J2 = { person_id: 'P007', nombre: 'Siete', rol: 'Gerente', activo: true, recibe_reporte_jefe: true };
+prueba('Jefe del canal sin JEFE_CANAL_ID: convención P001 o rol con «canal» (como antes)', () => {
+  igual([G('esJefeCanal')(J1), G('esJefeCanal')(J2), G('esJefeCanal')(Object.assign({}, J2, { rol: 'Jefe de canal' }))],
+        [true, false, true]);
+});
+prueba('JEFE_CANAL_ID manda sobre la convención', () => {
+  estado.config = { JEFE_CANAL_ID: 'P007' };
+  igual([G('esJefeCanal')(J1), G('esJefeCanal')(J2)], [false, true]);
+});
+prueba('Validación avisa si ningún jefe es jefe del canal (la evaluación mensual no saldría)', () => {
+  igual(G('avisoJefeCanal')([J2]) !== null, true);
+  igual(G('avisoJefeCanal')([J1, J2]), null);
+  estado.config = { JEFE_CANAL_ID: 'P099' };
+  igual(G('avisoJefeCanal')([J1, J2]) !== null, true);
+});
+prueba('Día 1: si la evaluación mensual falla (sin jefe del canal), las recurrentes igual se generan', () => {
+  estado.config = { ADMIN_EMAIL: 'admin@example.com' };
+  let rec = 0;
+  con({
+    today: () => fecha('2027-03-01'), monthlyRollover: () => {}, sendPersonalEvalsDay4: () => {},
+    monthlyEvalJob: () => { throw new Error('No se encontró jefe del canal'); },
+    generateRecurringTasks: () => { rec++; }, MailApp: { sendEmail() {} }
+  }, () => G('dailyDispatcherMorning')());
+  igual(rec, 1);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);
