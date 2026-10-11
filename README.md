@@ -1,5 +1,7 @@
 # Gantt para un equipo, sobre Google Workspace
 
+[![verificar](https://github.com/s-osorio-gom/gantt-google-workspace/actions/workflows/verificar.yml/badge.svg)](https://github.com/s-osorio-gom/gantt-google-workspace/actions/workflows/verificar.yml)
+
 Sistema de gestión de proyectos para un equipo pequeño o mediano, hecho con
 **Google Sheets + Apps Script + Gmail**: proyectos y tareas en un Sheet, un
 Gantt diario dibujado en una pestaña, recordatorios y reportes por correo,
