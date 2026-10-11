@@ -93,6 +93,9 @@ function enviarRelevantesComentados() {
   rows.forEach(r => { (byPerson[r.person_id] = byPerson[r.person_id] || []).push(r); });
   const rel = confid.getSheetByName('Relevantes');
   const colMap = {}; REL_HEADERS.forEach((h, i) => colMap[h] = i + 1);
+  // En SANDBOX el correo va al admin: no se marca enviado, o en PROD la persona no lo
+  // recibiría nunca. El log (separado por modo) evita repetirlo en la misma semana.
+  const sandbox = isSandboxMode();
   let sent = 0;
   Object.keys(byPerson).forEach(pid => {
     const person = getPersonById(pid);
@@ -110,10 +113,10 @@ function enviarRelevantesComentados() {
     const res = sendEmailGTM({
       eventType: 'relevantes_feedback', period: getWeekId(today()) + '-' + pid,
       realToEmail: person.email, realToName: person.nombre,
-      subject: 'Comentarios a tus relevantes de la semana', htmlBody: html, allowDuplicate: true
+      subject: 'Comentarios a tus relevantes de la semana', htmlBody: html, allowDuplicate: !sandbox
     });
     if (res.ok) {
-      byPerson[pid].forEach(r => {
+      if (!sandbox) byPerson[pid].forEach(r => {
         rel.getRange(r._rowIndex, colMap['enviado']).setValue('TRUE');
         rel.getRange(r._rowIndex, colMap['fecha_comentario']).setValue(fmtDateHuman(today()));
       });
@@ -151,5 +154,6 @@ function enviarRelevantesDesdeMenu() {
   const r = enviarRelevantesComentados();
   SpreadsheetApp.getUi().alert('Relevantes comentados',
     'Enviados a ' + (r.sent || 0) + ' persona(s)' + (r.error ? ('\n\n' + r.error) : '') +
-    (isSandboxMode() ? '\n\n(SANDBOX: van al admin)' : ''), SpreadsheetApp.getUi().ButtonSet.OK);
+    (isSandboxMode() ? '\n\n(SANDBOX: van al admin y no se marcan como enviados)' : ''),
+    SpreadsheetApp.getUi().ButtonSet.OK);
 }

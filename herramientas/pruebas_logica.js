@@ -232,6 +232,60 @@ prueba('Snapshot: una foto por semana (o por día si no hay snapshot_week)', () 
   igual(ya([{ snapshot_date: fecha('2026-05-29') }], '2026-W22', '2026-05-29', false), true);
 });
 
+// ── SANDBOX no consume lo que tiene que llegar en PROD ─────────────────────
+// Reemplaza temporalmente funciones globales del contexto (como redefinirlas en
+// Apps Script) y las restaura al terminar.
+function con(dobles, fn) {
+  const antes = {};
+  Object.keys(dobles).forEach(k => { antes[k] = ctx[k]; ctx[k] = dobles[k]; });
+  try { return fn(); } finally { Object.keys(antes).forEach(k => { ctx[k] = antes[k]; }); }
+}
+function evalDia4(modo) {
+  estado.config = { SYSTEM_MODE: modo, ADMIN_EMAIL: 'admin@example.com' };
+  G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
+  const marcas = [], envios = [];
+  const r = con({
+    today: () => fecha('2026-11-04'),
+    getActivePersons: () => G('__datos.personas'),
+    readEvalSheetAsObjects: () => ({ rows: [{ _rowIndex: 2, year: 2026, month: 10, person_id: 'P002',
+      calificacion_1_5: 4, comentario_jefe: 'Buen mes', estado: 'LISTO', fecha_evaluacion: 'x' }] }),
+    setEvalCell: (tab, fila, col, v) => marcas.push(col + '=' + v),
+    renderTemplate: () => '',
+    sendEmailGTM: (o) => { envios.push(o); return { ok: true }; }
+  }, () => G('sendPersonalEvalsDay4')());
+  return { r, marcas, envios };
+}
+prueba('Evaluación enviada en SANDBOX no queda ENVIADO (si no, en PROD nunca llega)', () => {
+  const { r, marcas, envios } = evalDia4('SANDBOX');
+  igual([r.sent, marcas, envios[0].allowDuplicate], [1, [], false]);
+});
+prueba('Evaluación enviada en PROD sí queda ENVIADO', () => {
+  const { r, marcas } = evalDia4('PROD');
+  igual([r.sent, marcas], [1, ['estado=ENVIADO']]);
+});
+function relevantesSabado(modo) {
+  estado.config = { SYSTEM_MODE: modo, ADMIN_EMAIL: 'admin@example.com' };
+  G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
+  const escrituras = [], envios = [];
+  const hoja = { getRange: (f, c) => ({ setValue: (v) => escrituras.push([f, c, v]) }) };
+  con({
+    getConfidSS: () => ({ getSheetByName: () => hoja }),
+    readSheetObjectsFrom: () => [{ _rowIndex: 5, person_id: 'P002', tipo: 'Otro', relevante: 'r',
+      comentario_lider: 'ok', enviado: 'FALSE', semana: '2026-W45' }],
+    renderTemplate: () => '',
+    sendEmailGTM: (o) => { envios.push(o); return { ok: true }; }
+  }, () => G('enviarRelevantesComentados')());
+  return { escrituras, envios };
+}
+prueba('Relevantes enviados en SANDBOX no quedan enviado=TRUE', () => {
+  const { escrituras, envios } = relevantesSabado('SANDBOX');
+  igual([envios.length, escrituras.length, envios[0].allowDuplicate], [1, 0, false]);
+});
+prueba('Relevantes enviados en PROD sí quedan enviado=TRUE', () => {
+  const { escrituras } = relevantesSabado('PROD');
+  igual(escrituras.map(e => e[2]).indexOf('TRUE') >= 0, true);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

@@ -208,13 +208,18 @@ function sendPersonalEvalsDay4() {
     Number(r.year) === year && Number(r.month) === month &&
     String(r.calificacion_1_5) !== '' && String(r.comentario_jefe || '').trim() !== '' &&
     r.estado !== 'ENVIADO');
+  // En SANDBOX el correo va al admin, no a la persona: marcar la fila ENVIADO haría
+  // que, ya en PROD, nunca le llegara. El log (separado por modo) evita repetirlo.
+  const sandbox = isSandboxMode();
   let sent = 0;
   rows.forEach(fila => {
     try {
       const res = sendPersonalEvaluationEmail(fila);
       if (res && res.ok) {
-        setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'estado', 'ENVIADO');
-        if (!fila.fecha_evaluacion) setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'fecha_evaluacion', new Date());
+        if (!sandbox) {
+          setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'estado', 'ENVIADO');
+          if (!fila.fecha_evaluacion) setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'fecha_evaluacion', new Date());
+        }
         sent++;
       }
     } catch (err) { logError('eval día 4: ' + err.message); }
@@ -262,7 +267,8 @@ function enviarEvaluacionesDesdeMenu() {
   const r = sendPersonalEvalsDay4();
   SpreadsheetApp.getUi().alert('Evaluaciones enviadas',
     'Enviadas: ' + r.sent + ' de ' + r.candidatas + ' calificadas' +
-    (isSandboxMode() ? '\n\n(SANDBOX: van al admin)' : ''), SpreadsheetApp.getUi().ButtonSet.OK);
+    (isSandboxMode() ? '\n\n(SANDBOX: van al admin y no se marcan como enviadas; en PROD saldrán a cada persona)' : ''),
+    SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
 function readEvalRowFromPrivate(rowIndex) {
@@ -315,6 +321,8 @@ function sendPersonalEvaluationEmail(fila) {
     realToName: person.nombre,
     subject: 'Tu evaluación de ' + monthName + ' ' + fila.year,
     htmlBody: html,
-    allowDuplicate: true
+    // En PROD manda el estado de la fila (permite reenviar si el admin lo devuelve a LISTO);
+    // en SANDBOX la fila no se marca, así que el anti-duplicado del log evita repetir.
+    allowDuplicate: !isSandboxMode()
   });
 }
