@@ -316,6 +316,21 @@ prueba('Contenedor de recurrentes nuevo queda a nombre del admin', () => {
   igual([r.pid, r.filas.length && r.filas[0].owner_id], ['PR009', 'P003']);
 });
 
+// ── festivos y fechas de 00_Config ─────────────────────────────────────────
+prueba('FESTIVOS con una sola fecha (Sheets la guarda como fecha) sí cuenta', () => {
+  estado.config = { FESTIVOS: fecha('2026-12-25') };
+  igual(Object.keys(G('_festivos')()), ['2026-12-25']);
+});
+prueba('FESTIVOS ignora fechas imposibles y acepta el 29 de febrero bisiesto', () => {
+  estado.config = { FESTIVOS: '2028-02-29, 2027-02-29, 2026-02-30, navidad, 2026-12-08' };
+  igual(Object.keys(G('_festivos')()), ['2028-02-29', '2026-12-08']);
+});
+prueba('GANTT_DESDE imposible no corre la ventana: se usa el semestre en curso', () => {
+  estado.config = { GANTT_DESDE: '2027-02-30', GANTT_HASTA: '2027-04-30' };
+  const w = G('ganttWindow')(fecha('2026-10-11'));
+  igual([iso(w.start), iso(w.end)], ['2026-07-01', '2026-12-31']);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

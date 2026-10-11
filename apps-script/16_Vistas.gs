@@ -642,11 +642,23 @@ var _MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto',
  */
 function _festivos() {
   const out = {};
-  String(getConfig('FESTIVOS') || '').split(/[,;\s]+/).forEach(s => {
-    const iso = _toISO(s.trim());
-    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) out[iso] = true;
+  // Una sola fecha escrita en la celda, Sheets la guarda como fecha: String(Date)
+  // la partía en palabras y el año suelto acababa sombreando el 31 de diciembre.
+  const raw = getConfig('FESTIVOS');
+  const partes = raw instanceof Date ? [raw] : String(raw || '').split(/[,;\s]+/);
+  partes.forEach(s => {
+    const iso = _toISO(s instanceof Date ? s : String(s).trim());
+    if (_isoValida(iso)) out[iso] = true;
   });
   return out;
+}
+
+/** ¿Es 'yyyy-mm-dd' una fecha que existe? (rechaza 2026-02-30 o 2027-02-29). */
+function _isoValida(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(s))) return false;
+  const p = s.split('-').map(Number);
+  const d = new Date(p[0], p[1] - 1, p[2]);
+  return d.getFullYear() === p[0] && d.getMonth() === p[1] - 1 && d.getDate() === p[2];
 }
 
 /**
@@ -659,7 +671,7 @@ function ganttWindow(hoy) {
   const ref = hoy || today();
   const desde = _toISO(getConfig('GANTT_DESDE') || '');
   const hasta = _toISO(getConfig('GANTT_HASTA') || '');
-  const okIso = s => /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const okIso = _isoValida;
   const local = s => { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
   if (okIso(desde) && okIso(hasta) && desde <= hasta) {
     const ini = local(desde), fin = local(hasta);
