@@ -286,6 +286,36 @@ prueba('Relevantes enviados en PROD sí quedan enviado=TRUE', () => {
   igual(escrituras.map(e => e[2]).indexOf('TRUE') >= 0, true);
 });
 
+// ── instalación: el contenedor de recurrentes siempre tiene responsable ────
+function contenedor(personas, proyectos) {
+  estado.config = { ADMIN_EMAIL: 'admin@example.com' };
+  personas.forEach(p => G('__datos.personas').push(p));
+  proyectos.forEach(p => G('__datos.proyectos').push(p));
+  const filas = [], celdas = [];
+  let error = '', pid = '';
+  con({
+    getActivePersons: () => G('__datos.personas').filter(p => p.activo),
+    nextId: () => 'PR009',
+    appendRowByObject: (hoja, o) => filas.push(o),
+    setCellByHeader: (hoja, fila, col, v) => celdas.push(col + '=' + v),
+    setConfigValue: (k, v) => { estado.config[k] = v; }
+  }, () => { try { pid = G('_ensureRecurringContainer')(); } catch (e) { error = e.message; } });
+  return { filas, celdas, error, pid };
+}
+const ADMIN = { person_id: 'P003', nombre: 'Admin', email: 'admin@example.com', activo: true };
+prueba('Sin personas no se crea un contenedor de recurrentes sin responsable', () => {
+  const r = contenedor([], []);
+  igual([r.filas.length, /persona/i.test(r.error)], [0, true], r.error);
+});
+prueba('Contenedor de recurrentes existente sin responsable se repara con el admin', () => {
+  const r = contenedor([ADMIN], [{ project_id: 'PR004', nombre: '🔁 Recurrentes', owner_id: '', _rowIndex: 5 }]);
+  igual([r.pid, r.filas.length, r.celdas], ['PR004', 0, ['owner_id=P003']]);
+});
+prueba('Contenedor de recurrentes nuevo queda a nombre del admin', () => {
+  const r = contenedor([{ person_id: 'P001', nombre: 'Otra', email: 'otra@example.com', activo: true }, ADMIN], []);
+  igual([r.pid, r.filas.length && r.filas[0].owner_id], ['PR009', 'P003']);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

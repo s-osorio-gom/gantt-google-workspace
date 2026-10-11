@@ -102,9 +102,10 @@ Después, desde el Sheet:
 
 1. `🍀 EQUIPO → 🧱 Crear pestañas base`.
 2. Llenar `00_Config` (como mínimo `ADMIN_EMAIL` y `EMAIL_DOMAIN`) y recargar.
-3. `Admin → ⚙️ Completar configuración (1 vez)`.
-4. Cargar el equipo (`Admin → Agregar persona`) y los proyectos.
-5. `Admin → ⏰ Instalar / reinstalar disparadores`.
+3. `Admin → 👥 Agregar persona`: al menos usted, con el correo de `ADMIN_EMAIL`.
+4. `Admin → ⚙️ Completar configuración (1 vez)`.
+5. Cargar el resto del equipo y los proyectos.
+6. `Admin → ⏰ Instalar / reinstalar disparadores`.
 
 Déjelo en `SANDBOX` una semana antes de pasar a `PROD`.
 

@@ -150,9 +150,17 @@ quiera en `apps-script/_brand_bar.html` (que también lleva el nombre de la
 organización). Si la plantilla no usa `cid:logo`, la imagen no se adjunta.
 
 Recargue el Sheet. Si su correo está en `ADMIN_EMAIL`, aparece el submenú
-**⚙️ Admin**. Corra `⚙️ Completar configuración (1 vez)`: agrega columnas
-PERT, crea las pestañas del Sheet de jefes y el proyecto contenedor de
-recurrentes, y reconstruye las vistas.
+**⚙️ Admin**.
+
+Agréguese como persona: `Admin → 👥 Agregar persona`, con el mismo correo de
+`ADMIN_EMAIL`. El proyecto contenedor de recurrentes necesita un responsable;
+si todavía no hay nadie en `01_Personas`, el paso siguiente no lo crea y lo
+dice en el resumen («Proyecto de recurrentes: error: Cargue al menos una
+persona…»).
+
+Corra `⚙️ Completar configuración (1 vez)`: agrega columnas PERT, crea las
+pestañas del Sheet de jefes y el proyecto contenedor de recurrentes (a nombre
+del admin), y reconstruye las vistas. Se puede repetir sin riesgo.
 
 Recomendado: proteja la hoja `00_Config` (`Datos → Proteger hojas y rangos`)
 para que solo los administradores la editen. El menú Admin se oculta y el
@@ -162,7 +170,7 @@ escriben ahí con la cuenta de quien los usa.
 
 ## 5 · Cargar el equipo
 
-Desde el menú, `Admin → Agregar persona`. O, para sembrar un equipo completo de
+Desde el menú, `Admin → Agregar persona`, para el resto del equipo. O, para sembrar un equipo completo de
 una vez, edite `_reorgPersonas()` y `_reorgProyectos()` en `14_Reorg.gs` (traen
 un equipo ficticio de molde) y corra `Admin → Reorganizar equipo y proyectos`.
 Ese comando **reescribe** `01_Personas`, `02_Proyectos` y `03_Tareas`; antes
