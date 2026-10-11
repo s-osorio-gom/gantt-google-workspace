@@ -1,0 +1,88 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<?!= HtmlService.createHtmlOutputFromFile('_sidebar_styles').getContent() ?>
+</head><body>
+
+<div id="loading" class="loading">Cargando...</div>
+
+<div id="content" style="display:none">
+  <h2>💬 Mi comentario semanal</h2>
+  <p class="subtitle" id="greeting"></p>
+
+  <div class="info-box">
+    Este comentario aparece en <b>tu correo del lunes</b> y en los reportes ejecutivos del jefe operativo y el jefe del canal.<br>
+    Se borra automáticamente cada lunes después del envío para que la siguiente semana arranque vacío.
+  </div>
+
+  <label>Tu comentario para esta semana</label>
+  <p class="hint">Ej: "Esta semana arranco AV-Leche. Tipologías sigue esperando respuesta legal."</p>
+  <textarea id="comentario" rows="6" maxlength="1000" placeholder="Escribe aquí lo que quieras que tus jefes vean esta semana..."></textarea>
+  <p class="hint" id="charcount">0 / 1000 caracteres</p>
+
+  <button type="button" class="btn" id="btnSave">Guardar</button>
+  <button type="button" class="btn secondary" id="btnClear">Borrar mi comentario</button>
+  <div id="msg" class="msg"></div>
+</div>
+
+<div id="error" style="display:none" class="msg err">
+  No se pudo cargar. <span id="errMsg"></span>
+</div>
+
+<script>
+function init(){
+  google.script.run
+    .withSuccessHandler(function(data){
+      document.getElementById('loading').style.display = 'none';
+      if (!data.found) {
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('errMsg').textContent = data.message;
+        return;
+      }
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('greeting').textContent = 'Hola ' + data.nombre_corto + ', actualiza tu comentario aquí.';
+      document.getElementById('comentario').value = data.comentario;
+      updateCharCount();
+    })
+    .withFailureHandler(function(err){
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('errMsg').textContent = err.message;
+    })
+    .getMyWeeklyComment();
+}
+
+function updateCharCount(){
+  var len = document.getElementById('comentario').value.length;
+  document.getElementById('charcount').textContent = len + ' / 1000 caracteres';
+}
+
+document.getElementById('comentario').addEventListener('input', updateCharCount);
+
+document.getElementById('btnSave').addEventListener('click', function(){
+  var btn = this; var msg = document.getElementById('msg');
+  btn.disabled = true; btn.textContent = 'Guardando...'; msg.className = 'msg';
+  var text = document.getElementById('comentario').value;
+  google.script.run
+    .withSuccessHandler(function(res){
+      msg.className = 'msg ok';
+      msg.textContent = '✅ Guardado (' + res.length + ' caracteres). Va a aparecer en tu correo del próximo lunes.';
+      btn.disabled = false; btn.textContent = 'Guardar';
+    })
+    .withFailureHandler(function(err){
+      msg.className = 'msg err';
+      msg.textContent = '❌ ' + err.message;
+      btn.disabled = false; btn.textContent = 'Guardar';
+    })
+    .updateMyWeeklyComment(text);
+});
+
+document.getElementById('btnClear').addEventListener('click', function(){
+  if (!confirm('¿Borrar tu comentario? Esto deja tu fila en blanco.')) return;
+  document.getElementById('comentario').value = '';
+  updateCharCount();
+  document.getElementById('btnSave').click();
+});
+
+init();
+</script>
+</body></html>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<?!= HtmlService.createHtmlOutputFromFile('_sidebar_styles').getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile('_sidebar_utils').getContent() ?>
+</head><body>
+
+<h2>✏️ Editar tarea</h2>
+<p class="subtitle">Cambiar nombre, fechas o responsable(s)</p>
+
+<label>Escoge la tarea</label>
+<input type="text" id="filter" placeholder="Filtrar por nombre..." oninput="filterTasks()">
+<select id="task_id" size="6" style="height:140px"><option value="">-- cargando --</option></select>
+
+<div id="task_info" class="proj-info" style="display:none">
+  <span id="task_info_text"></span>
+</div>
+
+<div id="form_area" style="display:none">
+  <label>Proyecto</label>
+  <select id="project_id"></select>
+
+  <label>Nombre de la tarea</label>
+  <input id="nombre">
+
+  <label>Responsable(s)</label>
+  <div id="owners" class="multi-check"></div>
+
+  <div class="row">
+    <div>
+      <label>Fecha inicio</label>
+      <input id="fecha_inicio" type="date">
+    </div>
+    <div>
+      <label>Fecha fin</label>
+      <input id="fecha_fin" type="date">
+    </div>
+  </div>
+
+  <label>Peso</label>
+  <input id="peso" type="number" min="1" max="10">
+
+  <label>Comentario</label>
+  <textarea id="comentario" rows="2"></textarea>
+
+  <button type="button" class="btn" id="btnSave">Guardar cambios</button>
+  <div id="msg" class="msg"></div>
+</div>
+
+<script>
+var allTasks = [];
+var allProjects = [];
+var allPersons = [];
+
+function loadAll(){
+  google.script.run.withSuccessHandler(function(tasks){
+    allTasks = tasks;
+    renderTaskList(tasks);
+  }).getTasksForUI(true);
+  google.script.run.withSuccessHandler(function(p){ allProjects = p; }).getActiveProjectsForUI();
+  google.script.run.withSuccessHandler(function(p){ allPersons = p; }).getActivePersonsForUI();
+}
+
+function renderTaskList(list){
+  var sel = document.getElementById('task_id');
+  sel.innerHTML = '<option value="">-- escoger --</option>';
+  list.forEach(function(t){
+    var opt = document.createElement('option');
+    opt.value = t.id;
+    var marker = t.completada ? '✓ ' : '○ ';
+    opt.textContent = marker + t.nombre + '  [' + t.project_name + ']';
+    sel.appendChild(opt);
+  });
+}
+
+function filterTasks(){
+  var q = document.getElementById('filter').value.toLowerCase();
+  var filtered = allTasks.filter(function(t){
+    return t.nombre.toLowerCase().indexOf(q) >= 0 || t.project_name.toLowerCase().indexOf(q) >= 0;
+  });
+  renderTaskList(filtered);
+}
+
+document.getElementById('task_id').addEventListener('change', function(){
+  var taskId = this.value;
+  if (!taskId) {
+    document.getElementById('form_area').style.display = 'none';
+    document.getElementById('task_info').style.display = 'none';
+    return;
+  }
+  var t = allTasks.find(function(x){ return x.id === taskId; });
+  if (!t) return;
+
+  document.getElementById('task_info').style.display = 'block';
+  document.getElementById('task_info_text').innerHTML =
+    '<b>' + esc(t.id) + ':</b> ' + esc(t.nombre) + '<br>' +
+    '<b>Proyecto:</b> ' + esc(t.project_name) + '<br>' +
+    '<b>Responsables actuales:</b> ' + esc(t.owner_names);
+
+  // Llenar form
+  document.getElementById('nombre').value = t.nombre;
+  document.getElementById('fecha_inicio').value = t.fecha_inicio;
+  document.getElementById('fecha_fin').value = t.fecha_fin;
+  document.getElementById('peso').value = t.peso || 1;
+  document.getElementById('comentario').value = t.comentario || '';
+
+  // Proyecto dropdown
+  var projSel = document.getElementById('project_id');
+  projSel.innerHTML = '';
+  allProjects.forEach(function(p){
+    var opt = document.createElement('option');
+    opt.value = p.id; opt.textContent = p.nombre;
+    if (p.id === t.project_id) opt.selected = true;
+    projSel.appendChild(opt);
+  });
+
+  // Owners checkboxes
+  var ownersDiv = document.getElementById('owners');
+  ownersDiv.innerHTML = '';
+  var currentOwners = String(t.owner_ids || '').split(',').map(function(s){return s.trim();});
+  allPersons.forEach(function(p){
+    var lab = document.createElement('label');
+    lab.className = 'opt';
+    var checked = currentOwners.indexOf(p.id) >= 0 ? 'checked' : '';
+    lab.innerHTML = '<input type="checkbox" value="' + esc(p.id) + '" ' + checked + '> ' + esc(p.nombre);
+    ownersDiv.appendChild(lab);
+  });
+
+  document.getElementById('form_area').style.display = 'block';
+});
+
+document.getElementById('btnSave').addEventListener('click', function(){
+  var taskId = document.getElementById('task_id').value;
+  if (!taskId) return;
+  var btn = this; var msg = document.getElementById('msg');
+  btn.disabled = true; btn.textContent = 'Guardando...'; msg.className = 'msg';
+
+  var ownerIds = [];
+  document.querySelectorAll('#owners input:checked').forEach(function(cb){ ownerIds.push(cb.value); });
+  if (ownerIds.length === 0) {
+    msg.className = 'msg err'; msg.textContent = '❌ Marca al menos un responsable';
+    btn.disabled = false; btn.textContent = 'Guardar cambios';
+    return;
+  }
+
+  var payload = {
+    task_id: taskId,
+    project_id: document.getElementById('project_id').value,
+    nombre: document.getElementById('nombre').value.trim(),
+    owner_ids: ownerIds.join(','),
+    fecha_inicio: document.getElementById('fecha_inicio').value,
+    fecha_fin: document.getElementById('fecha_fin').value,
+    peso: parseInt(document.getElementById('peso').value, 10) || 1,
+    comentario: document.getElementById('comentario').value.trim()
+  };
+  google.script.run
+    .withSuccessHandler(function(){
+      msg.className = 'msg ok'; msg.textContent = '✅ Tarea actualizada';
+      btn.disabled = false; btn.textContent = 'Guardar cambios';
+      loadAll();
+    })
+    .withFailureHandler(function(err){
+      msg.className = 'msg err'; msg.textContent = '❌ ' + err.message;
+      btn.disabled = false; btn.textContent = 'Guardar cambios';
+    })
+    .updateTask(payload);
+});
+
+loadAll();
+</script>
+</body></html>

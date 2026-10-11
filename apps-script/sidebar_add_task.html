@@ -1,0 +1,143 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<?!= HtmlService.createHtmlOutputFromFile('_sidebar_styles').getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile('_sidebar_utils').getContent() ?>
+</head><body>
+
+<h2>➕ Agregar tarea</h2>
+<p class="subtitle">A un proyecto existente</p>
+
+<form id="frm">
+  <label>Proyecto <span class="req">*</span></label>
+  <p class="hint">A qué proyecto pertenece esta tarea</p>
+  <select id="project_id" required><option value="">-- escoger proyecto --</option></select>
+  <div id="proj_info" class="proj-info" style="display:none"></div>
+
+  <label>Nombre de la tarea <span class="req">*</span></label>
+  <p class="hint">Ej: "Validar costos con el jefe operativo"</p>
+  <input id="nombre" required>
+
+  <label>Responsable(s) <span class="req">*</span></label>
+  <p class="hint">Una o varias personas. Si son varias, la tarea es compartida 🤝</p>
+  <div id="owners" class="multi-check"></div>
+
+  <div class="row">
+    <div>
+      <label>Fecha inicio</label>
+      <input id="fecha_inicio" type="date">
+    </div>
+    <div>
+      <label>Fecha fin</label>
+      <input id="fecha_fin" type="date">
+    </div>
+  </div>
+
+  <label>Peso (opcional)</label>
+  <p class="hint">Para v2. Por ahora dejar en 1</p>
+  <input id="peso" type="number" value="1" min="1" max="10">
+
+  <label>Comentario inicial (opcional)</label>
+  <textarea id="comentario" rows="2"></textarea>
+
+  <button type="submit" class="btn" id="btnSave">Crear tarea</button>
+  <div id="msg" class="msg"></div>
+</form>
+
+<script>
+var allPersons = [];
+
+function loadProjects(){
+  google.script.run.withSuccessHandler(function(list){
+    var sel = document.getElementById('project_id');
+    list.forEach(function(p){
+      var opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.nombre + ' (' + p.owner_name + ')';
+      opt.dataset.fecha_inicio = p.fecha_inicio;
+      opt.dataset.fecha_fin = p.fecha_fin;
+      opt.dataset.owner_id = p.owner_id;
+      sel.appendChild(opt);
+    });
+  }).getActiveProjectsForUI();
+}
+
+function loadPersons(){
+  google.script.run.withSuccessHandler(function(list){
+    allPersons = list;
+    var div = document.getElementById('owners');
+    div.innerHTML = '';
+    list.forEach(function(p){
+      var lab = document.createElement('label');
+      lab.className = 'opt';
+      lab.innerHTML = '<input type="checkbox" value="' + esc(p.id) + '"> ' + esc(p.nombre) + ' (' + esc(p.id) + ')';
+      div.appendChild(lab);
+    });
+  }).getActivePersonsForUI();
+}
+
+document.getElementById('project_id').addEventListener('change', function(){
+  var sel = this.options[this.selectedIndex];
+  var info = document.getElementById('proj_info');
+  if (!this.value) { info.style.display = 'none'; return; }
+  info.innerHTML = '<b>Proyecto:</b> ' + esc(sel.textContent) +
+                   '<br><b>Rango:</b> ' + esc(sel.dataset.fecha_inicio || '?') + ' → ' + esc(sel.dataset.fecha_fin || '?');
+  info.style.display = 'block';
+  // pre-marcar owner del proyecto
+  var ownerId = sel.dataset.owner_id;
+  document.querySelectorAll('#owners input').forEach(function(cb){
+    cb.checked = cb.value === ownerId;
+  });
+});
+
+loadProjects();
+loadPersons();
+
+document.getElementById('frm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var btn = document.getElementById('btnSave');
+  var msg = document.getElementById('msg');
+  btn.disabled = true; btn.textContent = 'Creando...';
+  msg.className = 'msg';
+
+  var ownerIds = [];
+  document.querySelectorAll('#owners input:checked').forEach(function(cb){ ownerIds.push(cb.value); });
+
+  if (ownerIds.length === 0) {
+    msg.className = 'msg err';
+    msg.textContent = '❌ Marca al menos un responsable';
+    btn.disabled = false; btn.textContent = 'Crear tarea';
+    return;
+  }
+
+  var payload = {
+    project_id: document.getElementById('project_id').value,
+    nombre: document.getElementById('nombre').value.trim(),
+    owner_ids: ownerIds.join(','),
+    fecha_inicio: document.getElementById('fecha_inicio').value,
+    fecha_fin: document.getElementById('fecha_fin').value,
+    peso: parseInt(document.getElementById('peso').value, 10) || 1,
+    comentario: document.getElementById('comentario').value.trim()
+  };
+  if (payload.fecha_inicio && payload.fecha_fin && payload.fecha_fin < payload.fecha_inicio) {
+    msg.className = 'msg err';
+    msg.textContent = '❌ Fecha fin no puede ser anterior a fecha inicio';
+    btn.disabled = false; btn.textContent = 'Crear tarea';
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(function(res){
+      msg.className = 'msg ok';
+      msg.textContent = '✅ Tarea creada: ' + res.task_id;
+      btn.disabled = false; btn.textContent = 'Crear tarea';
+      document.getElementById('frm').reset();
+      document.getElementById('proj_info').style.display = 'none';
+    })
+    .withFailureHandler(function(err){
+      msg.className = 'msg err';
+      msg.textContent = '❌ ' + err.message;
+      btn.disabled = false; btn.textContent = 'Crear tarea';
+    })
+    .addTask(payload);
+});
+</script>
+</body></html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bienvenida — Sistema de Proyectos</title>
+<?!= HtmlService.createHtmlOutputFromFile('_styles').getContent() ?>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:24px 0"><tr><td align="center">
+<table class="wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+
+  <tr><td style="background:#0F2D52;color:#ffffff;padding:24px 28px 28px">
+    <?!= HtmlService.createHtmlOutputFromFile('_brand_bar').getContent() ?>
+    <h1 style="font-size:24px;font-weight:700;margin:0 0 6px;letter-spacing:-.3px;color:#ffffff">Bienvenido al tablero del equipo</h1>
+    <p style="font-size:14px;color:#D6DBE0;margin:0;font-weight:400">Gestión de proyectos del equipo</p>
+  </td></tr>
+
+  <tr><td style="padding:28px;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+
+    <p style="font-size:16px;margin:0 0 16px;color:#243244">Hola <strong><?= nombre_corto ?></strong>,</p>
+    <p style="font-size:15px;color:#4B5563;margin:0 0 22px;line-height:1.6">
+      Este es el tablero donde el equipo lleva sus <b style="color:#243244">proyectos y tareas</b>. Reemplaza los correos sueltos:
+      todo queda en un solo lugar y los reportes salen solos. Aquí tienes lo esencial para arrancar en 3 minutos.
+    </p>
+
+    <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:22px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Las 3 pestañas</h3>
+    <table cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#243244;line-height:1.5">
+      <tr><td style="padding:0 0 8px;vertical-align:top;width:170px"><b>📊 Resumen</b></td><td style="padding:0 0 8px">Foto del equipo: cuántos proyectos, en curso / completados / vencidos.</td></tr>
+      <tr><td style="padding:0 0 8px;vertical-align:top"><b>✅ Proyectos y Tareas</b></td><td style="padding:0 0 8px">Tu zona de trabajo. Aquí marcas tus tareas como terminadas.</td></tr>
+      <tr><td style="padding:0 0 8px;vertical-align:top"><b>📅 Cronograma</b></td><td style="padding:0 0 8px">Vista de calendario con las barras de cada proyecto.</td></tr>
+    </table>
+
+    <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Cómo se actualiza (lo más importante)</h3>
+    <div style="background:#E6EEF7;border-left:4px solid #1F4E8C;padding:16px 18px;border-radius:0 4px 4px 0;margin:0 0 18px">
+      <table cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#243244;line-height:1.55">
+        <tr><td style="padding:0 0 8px;vertical-align:top;width:22px">✔️</td><td style="padding:0 0 8px">¿Terminaste una tarea? Ve a <b>Proyectos y Tareas</b> y <b>marca la casilla</b> a la izquierda. El avance del proyecto sube solo.</td></tr>
+        <tr><td style="padding:0 0 8px;vertical-align:top">🗓️</td><td style="padding:0 0 8px"><b>Solo se puede actualizar los jueves</b>, hasta las <b>11:59 p.m.</b> Los demás días la hoja queda bloqueada.</td></tr>
+        <tr><td style="padding:0 0 8px;vertical-align:top">🍀</td><td style="padding:0 0 8px">Para <b>crear o editar</b> proyectos y tareas, usa el menú <b>🍀 EQUIPO › Editar proyectos y tareas</b>.</td></tr>
+        <tr><td style="vertical-align:top">📝</td><td>Para contar un avance importante de la semana, usa <b>🍀 EQUIPO › Crear relevante</b>.</td></tr>
+      </table>
+    </div>
+
+    <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Los correos automáticos</h3>
+    <table cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#243244;line-height:1.5">
+      <tr><td style="padding:0 0 8px;vertical-align:top;width:120px"><b>Jueves 8:30</b></td><td style="padding:0 0 8px">Te llega un recordatorio con <b>tus tareas pendientes</b> para que actualices antes de las 11:59 p.m.</td></tr>
+      <tr><td style="padding:0 0 8px;vertical-align:top"><b>Viernes 8:30</b></td><td style="padding:0 0 8px">Se envía el reporte de avance a <b>el jefe operativo y el jefe del canal</b> con lo cargado hasta el jueves.</td></tr>
+    </table>
+
+    <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Evaluación mensual</h3>
+    <p style="font-size:14px;color:#4B5563;margin:0 0 12px;line-height:1.6">
+      Cada inicio de mes tu jefe hace una evaluación <b style="color:#243244">por proyectos</b> (no por tareas):
+      cuántos proyectos tienes, cuánto avanzaron, y si vas <b style="color:#243244">al día</b> con sus fechas.
+    </p>
+    <table cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#243244;line-height:1.5;margin:0 0 12px">
+      <tr><td style="padding:0 0 6px;vertical-align:top;width:120px"><b>Día 1</b></td><td style="padding:0 0 6px">Tu jefe revisa las métricas de tus proyectos y te asigna una <b>calificación (1–5)</b> y un comentario.</td></tr>
+      <tr><td style="vertical-align:top"><b>Día 4</b></td><td>Recibes tu evaluación con esos números, tu calificación y el comentario.</td></tr>
+    </table>
+    <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;padding:12px 14px;margin:0 0 18px;font-size:13px;color:#7F1D1D;line-height:1.55">
+      🔒 <b>Confidencial:</b> tu evaluación es <b>privada entre tú y tu jefe</b>. Nadie más del equipo ve tu calificación ni tu comentario.
+    </div>
+
+    <div style="background:#FFFBEB;border:1px dashed #E0A82E;border-radius:6px;padding:14px 16px;margin:20px 0">
+      <p style="margin:0;font-size:13.5px;color:#243244;line-height:1.55">
+        💡 <b>Tip:</b> al crear una tarea puedes estimar sus <b>horas (PERT)</b> — optimista, más probable y pesimista —
+        y el sistema calcula el tiempo estimado. Así vemos la carga de cada quien.
+      </p>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 12px">
+      <tr><td align="center">
+        <a href="<?= link_sheet ?>" style="display:inline-block;background:#0F2D52;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:6px;font-size:14px;font-weight:600;letter-spacing:.3px">Abrir el tablero</a>
+      </td></tr>
+    </table>
+    <p style="font-size:13px;color:#6B7280;margin-top:8px;text-align:center">¿Dudas? Escríbele a <a href="mailto:<?= support_email ?>" style="color:#1F4E8C;text-decoration:none"><strong style="color:#4B5563"><?= support_email ?></strong></a></p>
+
+  </td></tr>
+
+  <tr><td style="background:#FAFAFB;color:#6B7280;font-size:11px;padding:18px 28px;border-top:1px solid #E5E7EB;line-height:1.6">
+    Sistema de Proyectos. Tú actualizas los jueves; los reportes salen solos.
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>

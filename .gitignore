@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+node_modules/
+.venv/
+
+# credenciales y apuntadores al proyecto real
+.clasp.json
+apps-script/.clasp.json
+.clasprc.json

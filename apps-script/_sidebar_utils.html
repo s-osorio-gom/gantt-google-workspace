@@ -1,0 +1,10 @@
+<script>
+/* Escapa texto para insertarlo con innerHTML (contenido o atributo entre comillas).
+   Los nombres de tareas, proyectos y personas los escribe el equipo en el Sheet:
+   concatenarlos sin escapar permitía inyectar HTML/JS en el panel de otra persona. */
+function esc(s){
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>

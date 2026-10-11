@@ -1,0 +1,75 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<?!= HtmlService.createHtmlOutputFromFile('_sidebar_styles').getContent() ?>
+<style>
+  .lockbanner{display:none;background:#FEF3C7;border:1px solid #E0A82E;color:#92400E;padding:9px 14px;border-radius:8px;margin-bottom:12px;font-size:12.5px}
+  .seg{display:flex;gap:8px;margin:4px 0 8px}
+  .seg label{flex:1;text-align:center;border:1px solid #D6DBE0;border-radius:6px;padding:8px;cursor:pointer;font-weight:600;color:#0F2D52;background:#fff;margin:0}
+  .seg input{display:none}
+  .seg input:checked + span{color:#fff}
+  .seg label.on{background:#0F2D52;color:#fff}
+</style>
+</head><body>
+<div class="colorbar"><i style="background:#0F2D52"></i><i style="background:#1F4E8C"></i><i style="background:#5A8AB8"></i><i style="background:#E0A82E"></i><i style="background:#3F8C5C"></i><i style="background:#C0392B"></i></div>
+
+<h2>📝 Crear relevante</h2>
+<p class="subtitle">Cuéntanos un avance o novedad de la semana. Lo revisal jefe operativo y te responde por correo.</p>
+<div id="lockbanner" class="lockbanner"></div>
+
+<label>Persona</label>
+<select id="person"></select>
+
+<label>¿Sobre qué?</label>
+<div class="seg">
+  <label id="lblProy" class="on"><input type="radio" name="tipo" value="Proyecto" checked><span>Un proyecto</span></label>
+  <label id="lblOtro"><input type="radio" name="tipo" value="Otro"><span>Otro</span></label>
+</div>
+
+<div id="projWrap">
+  <label>Proyecto</label>
+  <select id="project"></select>
+</div>
+
+<label>Relevante</label>
+<textarea id="relevante" rows="4" placeholder="Ej: esta semana se avanzó con la aprobación del rebate y quedó pendiente la firma…"></textarea>
+
+<button type="button" class="btn" id="btnSave">Enviar relevante</button>
+<div id="msg" class="msg"></div>
+
+<script>
+var me=null;
+function showMsg(t,k){ var m=document.getElementById('msg'); m.className='msg '+k; m.textContent=t; }
+function tipoSel(){ var r=document.querySelector('input[name=tipo]:checked'); return r?r.value:'Proyecto'; }
+function refreshTipo(){
+  var t=tipoSel();
+  document.getElementById('projWrap').style.display = (t==='Proyecto')?'block':'none';
+  document.getElementById('lblProy').classList.toggle('on', t==='Proyecto');
+  document.getElementById('lblOtro').classList.toggle('on', t==='Otro');
+}
+Array.prototype.forEach.call(document.getElementsByName('tipo'), function(r){ r.addEventListener('change', refreshTipo); });
+
+google.script.run.withSuccessHandler(function(d){
+  me=d.me;
+  if(!me.editAllowedNow){
+    var lb=document.getElementById('lockbanner'); lb.style.display='block';
+    lb.textContent='🔒 Hoy no se pueden crear relevantes. Solo los '+me.lockDayName+'.';
+  }
+  var ps=document.getElementById('person');
+  d.persons.forEach(function(p){ var o=document.createElement('option'); o.value=p.id; o.textContent=p.nombre; if(p.email===me.email)o.selected=true; ps.appendChild(o); });
+  var pr=document.getElementById('project');
+  d.projects.forEach(function(p){ var o=document.createElement('option'); o.value=p.id; o.textContent=p.nombre+' · '+p.owner_name; pr.appendChild(o); });
+}).getRelevanteFormData();
+
+document.getElementById('btnSave').addEventListener('click', function(){
+  var rel=document.getElementById('relevante').value.trim();
+  if(!rel){ showMsg('Escribe el relevante primero.','err'); return; }
+  var payload={ person_id:document.getElementById('person').value, tipo:tipoSel(),
+    project_id: tipoSel()==='Proyecto'?document.getElementById('project').value:'', relevante:rel };
+  var btn=this; btn.disabled=true; btn.textContent='Enviando…';
+  google.script.run
+    .withSuccessHandler(function(){ btn.disabled=false; btn.textContent='Enviar relevante'; showMsg('✅ Relevante enviado. El jefe operativo lo revisará.','ok'); document.getElementById('relevante').value=''; })
+    .withFailureHandler(function(e){ btn.disabled=false; btn.textContent='Enviar relevante'; showMsg('❌ '+e.message,'err'); })
+    .addRelevante(payload);
+});
+</script>
+</body></html>

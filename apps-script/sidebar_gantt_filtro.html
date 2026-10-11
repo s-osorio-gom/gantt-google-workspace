@@ -1,0 +1,43 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<?!= HtmlService.createHtmlOutputFromFile('_sidebar_styles').getContent() ?>
+</head><body>
+<div class="colorbar"><i style="background:#0F2D52"></i><i style="background:#1F4E8C"></i><i style="background:#5A8AB8"></i><i style="background:#E0A82E"></i><i style="background:#3F8C5C"></i><i style="background:#C0392B"></i></div>
+
+<h2>📅 Ver Gantt filtrado</h2>
+<p class="subtitle">Genera un Gantt diario del mes con los proyectos y sus tareas, filtrado por persona o por proyecto.</p>
+
+<label>Por persona</label>
+<select id="persona"><option value="">-- escoger persona --</option></select>
+<button type="button" class="btn" id="btnPersona">📅 Ver Gantt de la persona</button>
+
+<div class="divider"></div>
+
+<label>Por proyecto</label>
+<select id="proyecto"><option value="">-- escoger proyecto --</option></select>
+<button type="button" class="btn secondary" id="btnProyecto">📅 Ver Gantt del proyecto</button>
+
+<div id="msg" class="msg"></div>
+
+<script>
+function showMsg(t,k){ var m=document.getElementById('msg'); m.className='msg '+k; m.textContent=t; }
+function run(tipo, valor){
+  if(!valor){ showMsg('Escoge una opción primero','err'); return; }
+  showMsg('Generando Gantt…','warn');
+  google.script.run
+    .withSuccessHandler(function(r){ showMsg('✅ Listo: '+r.filas+' filas. Abre la pestaña "Gantt filtrado".','ok'); })
+    .withFailureHandler(function(e){ showMsg('❌ '+e.message,'err'); })
+    .construirGanttFiltrado(tipo, valor);
+}
+google.script.run.withSuccessHandler(function(list){
+  var s=document.getElementById('persona');
+  list.forEach(function(p){ var o=document.createElement('option'); o.value=p.id; o.textContent=p.nombre; s.appendChild(o); });
+}).getActivePersonsForUI();
+google.script.run.withSuccessHandler(function(list){
+  var s=document.getElementById('proyecto');
+  list.forEach(function(p){ var o=document.createElement('option'); o.value=p.id; o.textContent=p.nombre+' · '+p.owner_name; s.appendChild(o); });
+}).getActiveProjectsForUI();
+document.getElementById('btnPersona').addEventListener('click', function(){ run('persona', document.getElementById('persona').value); });
+document.getElementById('btnProyecto').addEventListener('click', function(){ run('proyecto', document.getElementById('proyecto').value); });
+</script>
+</body></html>

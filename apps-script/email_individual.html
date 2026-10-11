@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tu resumen semanal</title>
+<?!= HtmlService.createHtmlOutputFromFile('_styles').getContent() ?>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:24px 0">
+<tr><td align="center">
+
+<table class="wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+
+  <tr><td style="background:#0F2D52;color:#ffffff;padding:24px 28px 28px;font-family:'Inter','Segoe UI',Arial,sans-serif">
+    <?!= HtmlService.createHtmlOutputFromFile('_brand_bar').getContent() ?>
+    <h1 style="font-size:24px;font-weight:700;margin:0 0 6px;letter-spacing:-.3px;color:#ffffff;font-family:'Inter','Segoe UI',Arial,sans-serif">Tu resumen semanal</h1>
+    <p style="font-size:14px;color:#D6DBE0;margin:0;font-weight:400">
+      <?= period_label ?>
+    </p>
+  </td></tr>
+
+  <tr><td style="padding:28px;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+
+    <p style="font-size:16px;margin:0 0 20px;color:#243244">Hola <strong><?= nombre_corto ?></strong>,</p>
+    <p style="font-size:15px;color:#4B5563;margin:0 0 24px;line-height:1.6">
+      Tienes <?= n_active_projects ?> proyecto<?= n_active_projects===1?'':'s' ?> activo<?= n_active_projects===1?'':'s' ?>
+      con <?= n_open_tasks ?> tarea<?= n_open_tasks===1?'':'s' ?> pendiente<?= n_open_tasks===1?'':'s' ?>.
+      <? if (n_completed_projects > 0) { ?>Ya cerraste <?= n_completed_projects ?> proyecto<?= n_completed_projects===1?'':'s' ?> en total.<? } ?>
+      Esta semana terminaste <?= n_closed_this_week ?> tarea<?= n_closed_this_week===1?'':'s' ?>.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="8" border="0" style="margin:0 -8px 8px">
+      <tr>
+        <td class="kpi-cell" bgcolor="#0F2D52" align="center" style="background-color:#0F2D52;color:#ffffff;padding:18px 8px;border-radius:6px;width:25%;font-family:'Inter','Segoe UI',Arial,sans-serif">
+          <div style="font-size:36px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:8px"><?= kpi_activos ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">Activos</div>
+        </td>
+        <td class="kpi-cell" bgcolor="#3F8C5C" align="center" style="background-color:#3F8C5C;color:#ffffff;padding:18px 8px;border-radius:6px;width:25%;font-family:'Inter','Segoe UI',Arial,sans-serif">
+          <div style="font-size:36px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:8px"><?= kpi_al_dia ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">Al día</div>
+        </td>
+        <td class="kpi-cell" bgcolor="#E0A82E" align="center" style="background-color:#E0A82E;color:#ffffff;padding:18px 8px;border-radius:6px;width:25%;font-family:'Inter','Segoe UI',Arial,sans-serif">
+          <div style="font-size:36px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:8px"><?= kpi_riesgo ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">En riesgo</div>
+        </td>
+        <td class="kpi-cell" bgcolor="#C0392B" align="center" style="background-color:#C0392B;color:#ffffff;padding:18px 8px;border-radius:6px;width:25%;font-family:'Inter','Segoe UI',Arial,sans-serif">
+          <div style="font-size:36px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:8px"><?= kpi_vencidos ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">Vencidos</div>
+        </td>
+      </tr>
+    </table>
+
+    <div style="background:#FAFAFB;border:1px solid #E5E7EB;border-radius:6px;padding:12px 14px;margin:8px 0 24px;font-size:12px;color:#4B5563;line-height:1.6">
+      <b style="color:#243244">Activos:</b> proyectos abiertos. <b style="color:#243244">Al día:</b> avanzando dentro del cronograma.
+      <b style="color:#243244">En riesgo:</b> sin movimiento esta semana o atrasados. <b style="color:#243244">Vencidos:</b> la fecha fin ya pasó y siguen abiertos.
+    </div>
+
+    <? if (comentario_semanal && comentario_semanal.trim()) { ?>
+      <div style="background:#FFFBEB;border:1px dashed #E0A82E;border-radius:6px;padding:14px 16px;margin:0 0 20px">
+        <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#92400E;font-weight:700;margin:0 0 6px">Tu comentario para esta semana</p>
+        <p style="margin:0;font-size:14px;color:#243244;line-height:1.6;font-style:italic">"<?= comentario_semanal ?>"</p>
+      </div>
+    <? } else { ?>
+      <div style="background:#FAFAFB;border:1px dashed #E5E7EB;border-radius:6px;padding:14px 16px;margin:0 0 20px">
+        <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#92400E;font-weight:700;margin:0 0 6px">Tu comentario para esta semana</p>
+        <p style="margin:0;font-size:13px;color:#6B7280;line-height:1.5">(Sin comentario. Abre el menú EQUIPO &rarr; Mi comentario semanal para agregarlo.)</p>
+      </div>
+    <? } ?>
+
+    <? if (vencidos_list.length > 0 || riesgo_list.length > 0) { ?>
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:28px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Atención esta semana</h3>
+    <? } ?>
+
+    <? vencidos_list.forEach(function(m){ ?>
+      <div style="background:#F8E5E0;border-left:4px solid #C0392B;padding:14px 16px;border-radius:0 4px 4px 0;margin:0 0 12px">
+        <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#C0392B;font-weight:700;margin:0 0 6px">Vencido — necesita decisión</p>
+        <p style="margin:0;font-size:14px;line-height:1.5;color:#243244"><b><?= m.nombre ?></b> — <?= m.done_tasks ?> de <?= m.effective_total ?> tareas terminadas. La fecha fin propuesta ya pasó hace <?= m.days_overdue || Math.abs(m.days_remaining||0) ?> días.</p>
+        <p style="margin:6px 0 0;color:#4B5563;font-style:italic;font-size:13px">Sugerencia: cerrar las tareas pendientes esta semana o reprogramar la fecha fin.</p>
+      </div>
+    <? }); ?>
+
+    <? riesgo_list.forEach(function(m){ ?>
+      <div style="background:#FBF1E5;border-left:4px solid #E0A82E;padding:14px 16px;border-radius:0 4px 4px 0;margin:0 0 12px">
+        <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#E0A82E;font-weight:700;margin:0 0 6px"><?= m.status === 'Bloqueado' ? 'Bloqueado' : 'En riesgo' ?></p>
+        <p style="margin:0;font-size:14px;line-height:1.5;color:#243244"><b><?= m.nombre ?></b> — <?= m.done_tasks ?> de <?= m.effective_total ?> tareas terminadas.<? if (m.fecha_fin) { ?> Fecha fin <?= fmtDateHuman(m.fecha_fin) ?>.<? } ?></p>
+        <p style="margin:6px 0 0;color:#4B5563;font-style:italic;font-size:13px">Sugerencia: revisar el motivo y avanzar esta semana o pedir extensión.</p>
+      </div>
+    <? }); ?>
+
+    <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:28px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Mis proyectos</h3>
+
+    <? cards.forEach(function(m){
+      var leftColor = '#1F4E8C'; var badgeBg = '#E6EEF7'; var badgeFg = '#0F2D52'; var badgeText = 'En curso'; var cardBg = '#FFFFFF';
+      var barColor = '#3F8C5C';
+      if (m.status === 'Vencido') { leftColor='#C0392B'; badgeBg='#F8E5E0'; badgeFg='#C0392B'; badgeText='Vencido'; cardBg='#FFFAF9'; barColor='#C0392B'; }
+      else if (m.status === 'En riesgo') { leftColor='#E0A82E'; badgeBg='#FBF1E5'; badgeFg='#E0A82E'; badgeText='En riesgo'; cardBg='#FFFDF8'; barColor='#E0A82E'; }
+      else if (m.status === 'Bloqueado') { leftColor='#E0A82E'; badgeBg='#FBF1E5'; badgeFg='#E0A82E'; badgeText='Bloqueado'; cardBg='#FFFDF8'; barColor='#E0A82E'; }
+      else { if (m.progress_pct_display < 50) barColor='#E0A82E'; }
+    ?>
+      <div style="border:1px solid #E5E7EB;border-left:4px solid <?= leftColor ?>;border-radius:6px;padding:16px 18px;margin:0 0 12px;background:<?= cardBg ?>">
+        <div style="margin:0 0 4px">
+          <span style="display:inline-block;font-size:15px;color:#0F2D52;font-weight:700;vertical-align:middle"><?= m.nombre ?></span>
+          <span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;line-height:1.2;white-space:nowrap;background:<?= badgeBg ?>;color:<?= badgeFg ?>;margin-left:8px;vertical-align:middle"><?= badgeText ?></span>
+        </div>
+        <p style="font-size:12px;color:#6B7280;margin:0 0 10px">Proyecto · <?= m.project_id ?><? if (m.fecha_fin) { ?> · Fecha fin: <?= fmtDateHuman(m.fecha_fin) ?><? } ?></p>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 2px">
+          <tr>
+            <td style="font-size:12px;color:#243244;font-weight:600"><?= m.done_tasks ?> de <?= m.effective_total ?> tareas terminadas</td>
+            <td align="right" style="font-size:11px;color:#6B7280;font-weight:500"><?= m.progress_pct_display ?>%</td>
+          </tr>
+        </table>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 0">
+          <tr>
+            <td bgcolor="#F3F4F6" style="background:#F3F4F6;height:6px;border-radius:3px;padding:0;font-size:0;line-height:0">
+              <table width="<?= m.progress_pct_display ?>%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td bgcolor="<?= barColor ?>" style="background:<?= barColor ?>;height:6px;border-radius:3px;padding:0;font-size:0;line-height:0">&nbsp;</td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px">
+          <tr>
+            <td style="font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:.5px;width:38%;padding-right:8px">Esta semana</td>
+            <td style="font-size:13px;color:#243244;font-weight:500"><?= m.movement ?></td>
+          </tr>
+        </table>
+      </div>
+    <? }); ?>
+
+    <? if (cerrados_list.length > 0) { ?>
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Cerrados ✅</h3>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB;border-radius:6px;margin:0 0 16px;overflow:hidden">
+        <? cerrados_list.forEach(function(m, idx){ var isLast = idx === cerrados_list.length - 1; ?>
+          <tr>
+            <td style="padding:10px 14px;font-size:13px;color:#243244;font-weight:500<?= isLast ? '' : ';border-bottom:1px solid #E5E7EB' ?>"><?= m.nombre ?></td>
+            <td align="right" style="padding:10px 14px;font-size:13px;color:#3F8C5C;font-weight:600;white-space:nowrap<?= isLast ? '' : ';border-bottom:1px solid #E5E7EB' ?>">Cerrado<? if (m.fecha_fin) { ?> · <?= fmtDateHuman(m.fecha_fin) ?><? } ?></td>
+          </tr>
+        <? }); ?>
+      </table>
+    <? } ?>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 12px">
+      <tr><td align="center">
+        <a href="<?= link_tasks ?>" style="display:inline-block;background:#0F2D52;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:6px;font-size:14px;font-weight:600;letter-spacing:.3px;font-family:'Inter','Segoe UI',Arial,sans-serif">Actualizar mis tareas</a>
+      </td></tr>
+    </table>
+
+  </td></tr>
+
+  <tr><td style="background:#FAFAFB;color:#6B7280;font-size:11px;padding:18px 28px;border-top:1px solid #E5E7EB;line-height:1.6;font-family:'Inter','Segoe UI',Arial,sans-serif">
+    Generado automáticamente el <?= today_display ?> a las <?= today_time ?>.<br>
+    ¿Dudas? Escribe a <a href="mailto:<?= support_email ?>" style="color:#1F4E8C;text-decoration:none"><strong style="color:#4B5563"><?= support_email ?></strong></a> · Sistema de Proyectos v2
+  </td></tr>
+
+</table>
+
+</td></tr>
+</table>
+
+</body></html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+body{font-family:'Inter','Segoe UI',Arial,sans-serif;padding:18px;color:#1A1A1A;background:#fff;font-size:13px}
+h2{color:#1E2A55;font-size:18px;margin:0 0 4px}
+.subtitle{color:#6B7280;font-size:12px;margin:0 0 18px}
+label{display:block;font-weight:600;color:#1E2A55;margin:14px 0 4px;font-size:12px;letter-spacing:.3px}
+.hint{color:#6B7280;font-size:11px;font-weight:400;margin:0 0 6px}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:5px;font-size:13px;font-family:inherit;box-sizing:border-box}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#2E4380}
+.row{display:flex;gap:8px}
+.row > div{flex:1}
+.check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12px}
+.check input{width:auto}
+.btn{background:#1E2A55;color:#fff;border:none;border-radius:5px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:13px;width:100%;margin-top:18px}
+.btn:hover{background:#2E4380}
+.btn:disabled{background:#9CA3AF;cursor:not-allowed}
+.msg{margin-top:12px;padding:10px;border-radius:5px;font-size:12px;display:none}
+.msg.ok{background:#E8F1EC;color:#2E7D5B;border:1px solid #2E7D5B;display:block}
+.msg.err{background:#F8E5E0;color:#C44536;border:1px solid #C44536;display:block}
+.req{color:#C44536}
+</style>
+</head><body>
+<h2>Agregar proyecto</h2>
+<p class="subtitle">Nuevo proyecto EQUIPO</p>
+
+<form id="frm">
+  <label>Nombre del proyecto <span class="req">*</span></label>
+  <input id="nombre" required placeholder="Ej: Análisis de cobertura del trimestre">
+
+  <label>Responsable <span class="req">*</span></label>
+  <p class="hint">Una sola persona dueña del proyecto</p>
+  <select id="owner_id" required><option value="">-- escoger --</option></select>
+
+  <div class="row">
+    <div>
+      <label>Frente</label>
+      <input id="frente" value="EQUIPO">
+    </div>
+    <div>
+      <label>Prioridad</label>
+      <select id="prioridad">
+        <option>Alta</option>
+        <option selected>Media</option>
+        <option>Baja</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label>Fecha inicio</label>
+      <input id="fecha_inicio" type="date">
+    </div>
+    <div>
+      <label>Fecha fin</label>
+      <input id="fecha_fin" type="date">
+    </div>
+  </div>
+
+  <label>Objetivo / entregable final</label>
+  <textarea id="objetivo" rows="3" placeholder="Qué se busca con este proyecto"></textarea>
+
+  <label>Link Drive (opcional)</label>
+  <input id="link_drive" type="url" placeholder="https://drive.google.com/...">
+
+  <div class="check">
+    <input type="checkbox" id="add_initial_tasks">
+    <label for="add_initial_tasks" style="margin:0">Agregar 3 tareas iniciales placeholder</label>
+  </div>
+
+  <button type="submit" class="btn" id="btnSave">Guardar</button>
+  <div id="msg" class="msg"></div>
+</form>
+
+<script>
+function loadOwners(){
+  google.script.run.withSuccessHandler(function(list){
+    var sel = document.getElementById('owner_id');
+    list.forEach(function(p){
+      var opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.nombre;
+      sel.appendChild(opt);
+    });
+  }).getActivePersonsForUI();
+}
+loadOwners();
+
+document.getElementById('frm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var btn = document.getElementById('btnSave');
+  var msg = document.getElementById('msg');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  msg.className = 'msg';
+  var payload = {
+    nombre: document.getElementById('nombre').value.trim(),
+    owner_id: document.getElementById('owner_id').value,
+    frente: document.getElementById('frente').value,
+    prioridad: document.getElementById('prioridad').value,
+    fecha_inicio: document.getElementById('fecha_inicio').value,
+    fecha_fin: document.getElementById('fecha_fin').value,
+    objetivo: document.getElementById('objetivo').value,
+    link_drive: document.getElementById('link_drive').value,
+    add_initial_tasks: document.getElementById('add_initial_tasks').checked
+  };
+  if (payload.fecha_inicio && payload.fecha_fin && payload.fecha_fin < payload.fecha_inicio) {
+    msg.className = 'msg err';
+    msg.textContent = '❌ Fecha fin no puede ser anterior a fecha inicio';
+    btn.disabled = false; btn.textContent = 'Guardar';
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(function(res){
+      msg.className = 'msg ok';
+      msg.textContent = '✅ Agregado: ' + res.project_id + ' — actualizando el Gantt…';
+      document.getElementById('frm').reset();
+      // refresca Resumen / Proyectos y Tareas / Cronograma para que aparezca de una
+      google.script.run
+        .withSuccessHandler(function(){ msg.textContent = '✅ ' + res.project_id + ' agregado y visible en el Gantt.'; btn.disabled = false; btn.textContent = 'Guardar'; })
+        .withFailureHandler(function(){ msg.textContent = '✅ ' + res.project_id + ' agregado (si no lo ves, usa Admin › Reconstruir vistas).'; btn.disabled = false; btn.textContent = 'Guardar'; })
+        .refrescarVistasSilencioso();
+    })
+    .withFailureHandler(function(err){
+      msg.className = 'msg err';
+      msg.textContent = '❌ ' + err.message;
+      btn.disabled = false; btn.textContent = 'Guardar';
+    })
+    .addProject(payload);
+});
+</script>
+</body></html>

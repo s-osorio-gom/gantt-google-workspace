@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comentarios a tus relevantes</title>
+<?!= HtmlService.createHtmlOutputFromFile('_styles').getContent() ?>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:24px 0"><tr><td align="center">
+<table class="wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+
+  <tr><td style="background:#0F2D52;color:#ffffff;padding:24px 28px 28px">
+    <?!= HtmlService.createHtmlOutputFromFile('_brand_bar').getContent() ?>
+    <h1 style="font-size:23px;font-weight:700;margin:0 0 6px;letter-spacing:-.3px;color:#ffffff">Comentarios a tus relevantes</h1>
+    <p style="font-size:14px;color:#D6DBE0;margin:0;font-weight:400"><?= today_display ?></p>
+  </td></tr>
+
+  <tr><td style="padding:28px;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+    <p style="font-size:16px;margin:0 0 16px;color:#243244">Hola <strong><?= nombre_corto ?></strong>,</p>
+    <p style="font-size:15px;color:#4B5563;margin:0 0 22px;line-height:1.6">
+      el jefe operativo revisó los relevantes que compartiste esta semana. Aquí están con su comentario:
+    </p>
+
+    <? items.forEach(function(it){ ?>
+      <div style="border:1px solid #E5E7EB;border-left:4px solid #1F4E8C;border-radius:6px;padding:14px 16px;margin:0 0 12px;background:#ffffff">
+        <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:0 0 6px"><?= it.tipo === 'Otro' ? 'General' : it.proyecto ?></p>
+        <p style="font-size:14px;color:#243244;margin:0 0 10px;line-height:1.5"><b>Tu relevante:</b> <?= it.relevante ?></p>
+        <div style="background:#E8F1EC;border-left:3px solid #3F8C5C;padding:10px 12px;border-radius:0 4px 4px 0">
+          <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#3F8C5C;font-weight:700;margin:0 0 4px">Comentario del jefe operativo</p>
+          <p style="font-size:14px;color:#243244;margin:0;line-height:1.5"><?= it.comentario ?></p>
+        </div>
+      </div>
+    <? }); ?>
+
+  </td></tr>
+
+  <tr><td style="background:#FAFAFB;color:#6B7280;font-size:11px;padding:18px 28px;border-top:1px solid #E5E7EB;line-height:1.6">
+    Sistema de Proyectos · ¿Dudas? <a href="mailto:<?= support_email ?>" style="color:#1F4E8C;text-decoration:none"><strong style="color:#4B5563"><?= support_email ?></strong></a>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Resumen ejecutivo · Dirección</title>
+<?!= HtmlService.createHtmlOutputFromFile('_styles').getContent() ?>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:24px 0"><tr><td align="center">
+<table class="wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+
+  <tr><td style="background:#0F2D52;color:#ffffff;padding:24px 28px 28px">
+    <?!= HtmlService.createHtmlOutputFromFile('_brand_bar').getContent() ?>
+    <h1 style="font-size:24px;font-weight:700;margin:0 0 6px;letter-spacing:-.3px;color:#ffffff">Resumen ejecutivo · Dirección</h1>
+    <p style="font-size:14px;color:#D6DBE0;margin:0;font-weight:400"><?= period_label ?></p>
+  </td></tr>
+
+  <tr><td style="padding:28px;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+
+    <p style="font-size:16px;margin:0 0 20px;color:#243244">Buenos días <strong><?= nombre_corto ?></strong>,</p>
+
+    <table width="100%" cellpadding="0" cellspacing="8" border="0" style="margin:0 -8px 10px">
+      <tr>
+        <td bgcolor="#1F4E8C" align="center" style="background-color:#1F4E8C;color:#ffffff;padding:16px 8px;border-radius:6px;width:33%">
+          <div style="font-size:32px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:6px"><?= n_en_curso ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">En curso</div>
+        </td>
+        <td bgcolor="#3F8C5C" align="center" style="background-color:#3F8C5C;color:#ffffff;padding:16px 8px;border-radius:6px;width:33%">
+          <div style="font-size:32px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:6px"><?= n_completados ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">Completados</div>
+        </td>
+        <td bgcolor="#C0392B" align="center" style="background-color:#C0392B;color:#ffffff;padding:16px 8px;border-radius:6px;width:33%">
+          <div style="font-size:32px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:6px"><?= n_vencidos ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">Vencidos</div>
+        </td>
+      </tr>
+    </table>
+    <p style="text-align:center;font-size:12px;color:#6B7280;margin:0 0 18px"><b style="color:#243244"><?= n_total ?></b> proyectos activos</p>
+
+    <div style="background:#E6EEF7;border-left:4px solid #1F4E8C;padding:14px 16px;border-radius:0 4px 4px 0;margin:0 0 22px">
+      <p style="margin:0;font-size:14px;color:#4B5563;line-height:1.55"><?= lectura ?></p>
+    </div>
+
+    <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:20px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Proyectos en curso y cerrados esta semana</h3>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB;border-radius:6px;overflow:hidden;font-size:13px">
+      <tr>
+        <td bgcolor="#0F2D52" style="background:#0F2D52;color:#ffffff;text-align:left;padding:10px 12px;font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase">Proyecto · Responsable</td>
+        <td bgcolor="#0F2D52" style="background:#0F2D52;color:#ffffff;text-align:right;padding:10px 12px;font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase">Avance</td>
+        <td bgcolor="#0F2D52" style="background:#0F2D52;color:#ffffff;text-align:center;padding:10px 12px;font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase">Esta semana</td>
+      </tr>
+      <? proyectos_jefe.forEach(function(p, idx){ var isLast = idx === proyectos_jefe.length - 1; var bb = isLast ? '' : ';border-bottom:1px solid #EEF0F3'; ?>
+        <tr>
+          <td style="padding:9px 12px;vertical-align:middle<?= bb ?>">
+            <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:<?= p.status_color ?>;margin-right:8px"></span>
+            <span style="font-weight:600;color:#0F2D52"><?= p.nombre ?></span>
+            <span style="color:#6B7280;font-size:12px"> · <?= p.owner_name ?></span>
+          </td>
+          <td align="right" style="padding:9px 12px;vertical-align:middle;color:#243244;font-weight:700<?= bb ?>"><?= p.avance ?>%</td>
+          <td align="center" style="padding:9px 12px;vertical-align:middle<?= bb ?>">
+            <? if (p.status_label === 'Completado') { ?>
+              <span style="color:#3F8C5C;font-weight:700">✓ Completado<? if (p.fecha_cierre) { ?> · <?= p.fecha_cierre ?><? } ?></span>
+            <? } else if (p.hubo) { ?>
+              <span style="color:#3F8C5C;font-weight:700">▲ +<?= p.avance_semana ?>%</span>
+            <? } else { ?>
+              <span style="color:#9AA3B2">— sin avance</span>
+            <? } ?>
+          </td>
+        </tr>
+      <? }); ?>
+    </table>
+    <p style="font-size:11px;color:#6B7280;margin:8px 0 0">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1F4E8C;margin:0 4px"></span>En curso
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3F8C5C;margin:0 4px 0 12px"></span>Completado
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C0392B;margin:0 4px 0 12px"></span>Vencido
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 12px">
+      <tr><td align="center">
+        <a href="<?= link_dashboard ?>" style="display:inline-block;background:#0F2D52;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:6px;font-size:14px;font-weight:600;letter-spacing:.3px">Ver el resumen completo</a>
+      </td></tr>
+    </table>
+
+  </td></tr>
+
+  <tr><td style="background:#FAFAFB;color:#6B7280;font-size:11px;padding:18px 28px;border-top:1px solid #E5E7EB;line-height:1.6">
+    Generado automáticamente el <?= today_display ?> a las <?= today_time ?> · viernes.<br>
+    Sistema de Proyectos · ¿Dudas? <a href="mailto:<?= support_email ?>" style="color:#1F4E8C;text-decoration:none"><strong style="color:#4B5563"><?= support_email ?></strong></a>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>

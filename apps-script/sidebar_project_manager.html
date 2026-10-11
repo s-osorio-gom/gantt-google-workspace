@@ -1,0 +1,401 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<?!= HtmlService.createHtmlOutputFromFile('_sidebar_styles').getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile('_sidebar_utils').getContent() ?>
+<style>
+  body{padding:0}
+  #loadbar{position:fixed;top:0;left:0;height:3px;width:0;background:#E0A82E;z-index:999;transition:width .25s ease}
+  #loadbar.on{width:88%;transition:width 6s ease}
+  #loadbar.done{width:100%;transition:width .2s ease}
+  .wrap{padding:16px 20px}
+  .topbar{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .topbar h2{margin:0}
+  .pick{margin:6px 0 10px}
+  .picks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 12px}
+  .cols{display:grid;grid-template-columns:1.1fr 1.3fr;gap:20px;align-items:start}
+  @media(max-width:680px){.cols{grid-template-columns:1fr}.picks{grid-template-columns:1fr}}
+  .card{background:#F4F6F8;border:1px solid #D6DBE0;border-radius:10px;padding:14px}
+  .card h3{margin:0 0 10px;color:#0F2D52;font-size:13px;font-weight:800;letter-spacing:.3px}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid #ffffff80;border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:#0F2D52;color:#fff;padding:9px 16px;border-radius:8px;font-size:12.5px;opacity:0;transition:opacity .2s;z-index:998}
+  .toast.show{opacity:1}
+  .toast.ok{background:#3F8C5C}.toast.err{background:#C0392B}
+  .task{transition:background .15s}
+  .savechip{font-size:11px;color:#6B7280;margin-left:8px}
+  .pert3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .pertbox{background:#FFFBEB;border:1px dashed #E0A82E;border-radius:6px;padding:8px 10px;margin:6px 0;font-size:12px;color:#243244}
+  .hint{font-size:11px;color:#6B7280;margin:2px 0 8px}
+  .lockbanner{display:none;background:#FEF3C7;border:1px solid #E0A82E;color:#92400E;padding:9px 14px;border-radius:8px;margin-bottom:12px;font-size:12.5px}
+  input[disabled]{background:#EDEFF2;color:#8A93A8;cursor:not-allowed}
+</style>
+</head><body>
+<div id="loadbar"></div>
+<div class="colorbar"><i style="background:#0F2D52"></i><i style="background:#1F4E8C"></i><i style="background:#5A8AB8"></i><i style="background:#E0A82E"></i><i style="background:#3F8C5C"></i><i style="background:#C0392B"></i></div>
+
+<div class="wrap">
+  <div id="errbanner" style="display:none;background:#F7E4E1;border:1px solid #C0392B;color:#C0392B;padding:10px 36px 10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;position:relative">
+    <b>⚠️ Error:</b> <span id="errtext"></span>
+    <span style="position:absolute;right:12px;top:9px;cursor:pointer;font-weight:700" onclick="document.getElementById('errbanner').style.display='none'">✕</span>
+  </div>
+  <div id="lockbanner" class="lockbanner"></div>
+  <div class="topbar"><h2>✏️ Editar proyecto y tareas</h2><span id="chip" class="savechip"></span>
+    <button type="button" class="btn amber" id="btnNewProject" style="width:auto;margin-left:auto">➕ Nuevo proyecto</button>
+  </div>
+
+  <div class="picks">
+    <div>
+      <label>1) Filtra por responsable</label>
+      <select id="filter_owner"><option value="">— Todos —</option></select>
+    </div>
+    <div>
+      <label>2) Escoge el proyecto</label>
+      <select id="project_id"><option value="">-- cargando --</option></select>
+    </div>
+  </div>
+
+  <div id="form_area" class="cols" style="display:none">
+    <!-- IZQUIERDA: proyecto -->
+    <div class="card">
+      <h3>📁 Proyecto <span id="pertTotal" style="float:right;color:#B0641E;font-weight:700"></span></h3>
+      <label>Nombre</label>
+      <input id="nombre">
+      <label>Responsable</label>
+      <select id="owner_id"></select>
+      <div class="row">
+        <div><label>Inicio</label><input id="fecha_inicio" type="date"></div>
+        <div><label>Fin</label><input id="fecha_fin" type="date"></div>
+      </div>
+      <div id="dateHint" class="hint"></div>
+      <div class="row">
+        <div><label>Prioridad</label><select id="prioridad"><option>Alta</option><option>Media</option><option>Baja</option></select></div>
+        <div><label>Frente</label><input id="frente"></div>
+      </div>
+      <label>Objetivo</label>
+      <textarea id="objetivo" rows="2"></textarea>
+      <button type="button" class="btn" id="btnSave">💾 Guardar proyecto</button>
+      <button type="button" class="btn ok" id="btnComplete">✅ Marcar proyecto completo</button>
+      <button type="button" class="btn danger" id="btnArchive">🗑️ Archivar proyecto</button>
+    </div>
+
+    <!-- DERECHA: tareas -->
+    <div class="card" id="tasksCard">
+      <h3>✅ Tareas <span class="count" id="taskCount" style="color:#6B7280;font-weight:500"></span></h3>
+      <div class="tasks" id="tasks"></div>
+      <div class="divider"></div>
+      <label>➕ Nueva tarea</label>
+      <input id="nt_nombre" placeholder="Nombre de la tarea">
+      <label>Responsable de la tarea</label>
+      <select id="nt_owner"></select>
+      <div class="row">
+        <div><label>Inicio</label><input id="nt_inicio" type="date"></div>
+        <div><label>Fin</label><input id="nt_fin" type="date"></div>
+      </div>
+      <label>Estimación PERT (horas)</label>
+      <div class="pert3">
+        <input id="nt_opt" type="number" min="0" step="0.5" placeholder="Optimista">
+        <input id="nt_prob" type="number" min="0" step="0.5" placeholder="Más probable">
+        <input id="nt_pes" type="number" min="0" step="0.5" placeholder="Pesimista">
+      </div>
+      <div class="pertbox" id="nt_pertbox">PERT estimado: <b id="nt_pert">—</b> h · fórmula (O + 4·M + P) / 6</div>
+      <button type="button" class="btn amber" id="btnAddTask">➕ Agregar tarea</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+var allPersons = [], allProjects = [], cur = null, refreshTimer = null, pending = 0, mode = 'edit';
+var me = { isAdmin:false, isExempt:true, editAllowedNow:true, lockDayName:'jueves', canEditProjectDates:true };
+
+function meOwnerId(){
+  var match = allPersons.filter(function(p){ return p.email && me.email && p.email.toLowerCase()===me.email.toLowerCase(); })[0];
+  return match ? match.id : '';
+}
+function exitNewMode(){
+  mode = 'edit';
+  document.getElementById('btnSave').textContent = '💾 Guardar proyecto';
+  document.getElementById('btnComplete').style.display = '';
+  document.getElementById('btnArchive').style.display = '';
+  document.getElementById('tasksCard').style.display = '';
+}
+
+function busy(on){
+  var b=document.getElementById('loadbar');
+  if(on){ pending++; b.className='on'; }
+  else { pending=Math.max(0,pending-1); if(pending===0){ b.className='done'; setTimeout(function(){ b.className=''; },250); } }
+}
+function toast(msg, kind){
+  var t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+(kind||'');
+  clearTimeout(t._t); t._t=setTimeout(function(){ t.className='toast'; }, 2600);
+}
+function chip(txt){ document.getElementById('chip').textContent=txt||''; }
+function showError(msg){ document.getElementById('errtext').textContent=msg; document.getElementById('errbanner').style.display='block'; }
+function clearError(){ document.getElementById('errbanner').style.display='none'; }
+function pertCalc(o,m,p){ o=parseFloat(o)||0; m=parseFloat(m)||0; p=parseFloat(p)||0; if(!o&&!m&&!p) return ''; return Math.round(((o+4*m+p)/6)*10)/10; }
+function scheduleRefresh(){
+  chip('· se reflejará en las pestañas…');
+  if(refreshTimer) clearTimeout(refreshTimer);
+  refreshTimer=setTimeout(function(){
+    google.script.run.withSuccessHandler(function(){ chip('· pestañas actualizadas ✓'); setTimeout(function(){chip('');},1500); }).refrescarVistasSilencioso();
+  }, 1400);
+}
+function call(fn, args, onOk, onErr){
+  busy(true); clearError();
+  var r=google.script.run.withSuccessHandler(function(res){ busy(false); if(onOk)onOk(res); })
+    .withFailureHandler(function(e){ busy(false); showError(e.message); if(onErr)onErr(e); });
+  r[fn].apply(r, args||[]);
+}
+
+function populateOwnerFilter(){
+  var s=document.getElementById('filter_owner');
+  allPersons.forEach(function(p){ var o=document.createElement('option'); o.value=p.id; o.textContent=p.nombre; s.appendChild(o); });
+}
+function fillOwnerSelect(el, selectedId){
+  el.innerHTML='';
+  allPersons.forEach(function(p){ var o=document.createElement('option'); o.value=p.id; o.textContent=p.nombre; if(p.id===selectedId) o.selected=true; el.appendChild(o); });
+}
+function ownerIdFromTask(t){ return (t.owner_ids? String(t.owner_ids).split(',')[0].trim() : (cur? cur.owner_id : '')); }
+function loadProjects(keep){
+  call('getActiveProjectsForUI', [], function(list){
+    allProjects=list;
+    renderProjectOptions(keep);
+  });
+}
+function renderProjectOptions(keep){
+  var ownerFilter=document.getElementById('filter_owner').value;
+  var sel=document.getElementById('project_id');
+  sel.innerHTML='<option value="">-- escoger proyecto --</option>';
+  allProjects.filter(function(p){ return !ownerFilter || p.owner_id===ownerFilter; })
+    .forEach(function(p){
+      var o=document.createElement('option'); o.value=p.id; o.textContent=p.nombre+'  ·  '+p.owner_name;
+      sel.appendChild(o);
+    });
+  if(keep) sel.value=keep;
+}
+
+function applyDateRules(){
+  // fechas del proyecto: solo admins/supervisores
+  var fi=document.getElementById('fecha_inicio'), ff=document.getElementById('fecha_fin');
+  var canDates = me.canEditProjectDates;
+  fi.disabled = !canDates; ff.disabled = !canDates;
+  document.getElementById('dateHint').textContent = canDates
+    ? 'Las tareas deberán quedar dentro de este rango.'
+    : '🔒 Solo un administrador puede cambiar las fechas del proyecto.';
+  // rango para tareas
+  setTaskDateBounds();
+}
+function setTaskDateBounds(){
+  if(!cur) return;
+  ['nt_inicio','nt_fin'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(cur.fecha_inicio) el.min=cur.fecha_inicio; else el.removeAttribute('min');
+    if(cur.fecha_fin) el.max=cur.fecha_fin; else el.removeAttribute('max');
+  });
+}
+function taskInRange(fi, ff){
+  if(me && me.taskRangeEnforced===false) return true;   // candado de rango desactivado
+  if(!cur || !cur.fecha_inicio || !cur.fecha_fin) return true;
+  if(fi && fi < cur.fecha_inicio) return false;
+  if(ff && ff > cur.fecha_fin) return false;
+  return true;
+}
+function rangeMsg(){ return 'La tarea debe estar dentro del proyecto ('+cur.fecha_inicio+' → '+cur.fecha_fin+').'; }
+
+function loadDetail(pid){
+  call('getProjectDetail', [pid], function(d){
+    cur=d;
+    document.getElementById('form_area').style.display='grid';
+    document.getElementById('nombre').value=d.nombre;
+    document.getElementById('prioridad').value=d.prioridad;
+    document.getElementById('frente').value=d.frente;
+    document.getElementById('fecha_inicio').value=d.fecha_inicio;
+    document.getElementById('fecha_fin').value=d.fecha_fin;
+    document.getElementById('objetivo').value=d.objetivo;
+    document.getElementById('pertTotal').textContent = (d.pert_total? (Math.round(d.pert_total)+' h') : '');
+    fillOwnerSelect(document.getElementById('owner_id'), d.owner_id);
+    fillOwnerSelect(document.getElementById('nt_owner'), d.owner_id);
+    applyDateRules();
+    renderTasks();
+  });
+}
+
+function renderTasks(){
+  var tasks=cur.tasks||[];
+  document.getElementById('taskCount').textContent='('+tasks.length+')';
+  var c=document.getElementById('tasks'); c.innerHTML='';
+  if(!tasks.length){ c.innerHTML='<div class="meta" style="padding:6px;color:#6B7280">Sin tareas. Agrega una abajo 👇</div>'; return; }
+  tasks.forEach(function(t, idx){
+    var d=document.createElement('div'); d.className='task'+(t.completada?' done':'');
+    var pert = t.pert_horas!==''&&t.pert_horas!=null ? (' · '+t.pert_horas+' h') : '';
+    var own = t.owner_names ? (' · 👤 '+esc(t.owner_names)) : '';
+    d.innerHTML=
+      '<input type="checkbox" '+(t.completada?'checked':'')+' style="width:auto;margin-top:2px">'+
+      '<div class="name">'+esc(t.nombre)+'<div class="meta">'+esc(t.fecha_inicio||'—')+' → '+esc(t.fecha_fin||'—')+esc(pert)+own+'</div></div>'+
+      '<div class="acts"><button class="icon" title="Editar">✏️</button><button class="icon" title="Eliminar">🗑️</button></div>';
+    var chk=d.querySelector('input'), edB=d.querySelectorAll('.icon')[0], dlB=d.querySelectorAll('.icon')[1];
+    chk.addEventListener('change', function(){
+      if(t.id==='tmp'){ chk.checked=!chk.checked; toast('Espera, la tarea se está guardando…'); return; }
+      t.completada=chk.checked; d.classList.toggle('done', chk.checked);
+      call('setTaskCompleted', [t.id, chk.checked], function(){ scheduleRefresh(); },
+        function(){ t.completada=!chk.checked; renderTasks(); });
+    });
+    dlB.addEventListener('click', function(){
+      if(t.id==='tmp'){ toast('Espera, la tarea se está guardando…'); return; }
+      if(!confirm('¿Eliminar la tarea "'+t.nombre+'"?')) return;
+      cur.tasks.splice(idx,1); renderTasks();
+      call('deleteTask', [t.id], function(){ toast('Tarea eliminada','ok'); scheduleRefresh(); },
+        function(){ loadDetail(cur.id); });
+    });
+    edB.addEventListener('click', function(){ if(t.id==='tmp'){ toast('Espera, la tarea se está guardando…'); return; } inlineEdit(d, t); });
+    c.appendChild(d);
+  });
+}
+
+function inlineEdit(row, t){
+  var minA = cur.fecha_inicio? ' min="'+esc(cur.fecha_inicio)+'"':'';
+  var maxA = cur.fecha_fin? ' max="'+esc(cur.fecha_fin)+'"':'';
+  row.innerHTML='<div style="flex:1">'+
+    '<input class="e_nom" value="'+esc(t.nombre)+'">'+
+    '<label style="margin-top:6px">Responsable</label><select class="e_owner"></select>'+
+    '<div class="row"><div><input class="e_ini" type="date"'+minA+maxA+' value="'+esc(t.fecha_inicio)+'"></div>'+
+    '<div><input class="e_fin" type="date"'+minA+maxA+' value="'+esc(t.fecha_fin)+'"></div></div>'+
+    '<div class="pert3" style="margin-top:6px">'+
+      '<input class="e_opt" type="number" min="0" step="0.5" placeholder="Opt" value="'+esc(t.t_optimista)+'">'+
+      '<input class="e_prob" type="number" min="0" step="0.5" placeholder="Prob" value="'+esc(t.t_probable)+'">'+
+      '<input class="e_pes" type="number" min="0" step="0.5" placeholder="Pes" value="'+esc(t.t_pesimista)+'">'+
+    '</div>'+
+    '<div class="pertbox">PERT: <b class="e_pert">'+esc(t.pert_horas||'—')+'</b> h</div>'+
+    '<button class="btn sm ok e_save">Guardar</button> <button class="btn sm secondary e_cancel">Cancelar</button></div>';
+  fillOwnerSelect(row.querySelector('.e_owner'), ownerIdFromTask(t));
+  function recompute(){ var v=pertCalc(row.querySelector('.e_opt').value,row.querySelector('.e_prob').value,row.querySelector('.e_pes').value); row.querySelector('.e_pert').textContent = v===''?'—':v; }
+  ['e_opt','e_prob','e_pes'].forEach(function(cl){ row.querySelector('.'+cl).addEventListener('input', recompute); });
+  row.querySelector('.e_cancel').addEventListener('click', renderTasks);
+  row.querySelector('.e_save').addEventListener('click', function(){
+    var fi=row.querySelector('.e_ini').value, ff=row.querySelector('.e_fin').value;
+    if(fi && ff && ff<fi){ showError('La fecha de fin no puede ser anterior al inicio'); return; }
+    if(!taskInRange(fi,ff)){ showError(rangeMsg()); return; }
+    var newOwner=row.querySelector('.e_owner').value;
+    t.nombre=row.querySelector('.e_nom').value.trim();
+    t.fecha_inicio=fi; t.fecha_fin=ff; t.owner_ids=newOwner;
+    var po=allPersons.filter(function(x){return x.id===newOwner;})[0]; t.owner_names=po?po.nombre:'';
+    t.t_optimista=row.querySelector('.e_opt').value; t.t_probable=row.querySelector('.e_prob').value; t.t_pesimista=row.querySelector('.e_pes').value;
+    t.pert_horas=pertCalc(t.t_optimista,t.t_probable,t.t_pesimista);
+    renderTasks();
+    call('updateTask', [{task_id:t.id, nombre:t.nombre, owner_ids:newOwner, fecha_inicio:fi, fecha_fin:ff,
+      t_optimista:t.t_optimista, t_probable:t.t_probable, t_pesimista:t.t_pesimista}],
+      function(){ toast('Tarea actualizada','ok'); scheduleRefresh(); loadDetail(cur.id); }, function(){ loadDetail(cur.id); });
+  });
+}
+
+document.getElementById('filter_owner').addEventListener('change', function(){ renderProjectOptions(); document.getElementById('form_area').style.display='none'; });
+document.getElementById('project_id').addEventListener('change', function(){
+  if(mode==='new') exitNewMode();
+  if(!this.value){ document.getElementById('form_area').style.display='none'; return; }
+  loadDetail(this.value);
+});
+
+document.getElementById('btnNewProject').addEventListener('click', function(){
+  mode = 'new'; cur = null;
+  document.getElementById('project_id').value = '';
+  document.getElementById('form_area').style.display = 'grid';
+  document.getElementById('tasksCard').style.display = 'none';
+  document.getElementById('btnComplete').style.display = 'none';
+  document.getElementById('btnArchive').style.display = 'none';
+  document.getElementById('btnSave').textContent = '➕ Crear proyecto';
+  document.getElementById('pertTotal').textContent = '';
+  document.getElementById('nombre').value = '';
+  document.getElementById('frente').value = 'EQUIPO';
+  document.getElementById('prioridad').value = 'Media';
+  document.getElementById('fecha_inicio').value = '';
+  document.getElementById('fecha_fin').value = '';
+  document.getElementById('fecha_inicio').disabled = false;
+  document.getElementById('fecha_fin').disabled = false;
+  document.getElementById('dateHint').textContent = '';
+  document.getElementById('objetivo').value = '';
+  fillOwnerSelect(document.getElementById('owner_id'), meOwnerId());
+  document.getElementById('nombre').focus();
+});
+
+document.getElementById('btnSave').addEventListener('click', function(){
+  if(mode==='new'){
+    var np={ nombre:document.getElementById('nombre').value.trim(), owner_id:document.getElementById('owner_id').value,
+      prioridad:document.getElementById('prioridad').value, frente:document.getElementById('frente').value,
+      fecha_inicio:document.getElementById('fecha_inicio').value, fecha_fin:document.getElementById('fecha_fin').value,
+      objetivo:document.getElementById('objetivo').value.trim() };
+    if(!np.nombre){ showError('Escribe el nombre del proyecto'); return; }
+    if(!np.owner_id){ showError('Escoge un responsable'); return; }
+    if(np.fecha_inicio && np.fecha_fin && np.fecha_fin<np.fecha_inicio){ showError('La fecha de fin no puede ser anterior al inicio'); return; }
+    var nbtn=this; nbtn.disabled=true; nbtn.innerHTML='<span class="spin"></span>Creando…';
+    call('addProject', [np], function(res){
+      nbtn.disabled=false;
+      toast('✅ Proyecto creado: '+res.project_id,'ok');
+      exitNewMode();
+      scheduleRefresh();
+      loadProjects(res.project_id);
+      loadDetail(res.project_id);
+    }, function(){ nbtn.disabled=false; nbtn.textContent='➕ Crear proyecto'; });
+    return;
+  }
+  if(!cur) return;
+  var p={ project_id:cur.id, nombre:document.getElementById('nombre').value.trim(),
+    owner_id:document.getElementById('owner_id').value, prioridad:document.getElementById('prioridad').value,
+    frente:document.getElementById('frente').value, objetivo:document.getElementById('objetivo').value.trim() };
+  // fechas del proyecto: solo si el candado lo permite (admins/supervisores o candado abierto)
+  if(me.canEditProjectDates){ p.fecha_inicio=document.getElementById('fecha_inicio').value; p.fecha_fin=document.getElementById('fecha_fin').value;
+    if(p.fecha_inicio && p.fecha_fin && p.fecha_fin<p.fecha_inicio){ showError('La fecha de fin no puede ser anterior al inicio'); return; } }
+  var btn=this; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Guardando…';
+  call('updateProject', [p], function(){
+    btn.disabled=false; btn.textContent='💾 Guardar proyecto';
+    toast('✅ Proyecto guardado','ok'); cur.nombre=p.nombre; cur.owner_id=p.owner_id; loadProjects(cur.id); scheduleRefresh();
+  }, function(){ btn.disabled=false; btn.textContent='💾 Guardar proyecto'; });
+});
+
+document.getElementById('btnComplete').addEventListener('click', function(){
+  if(!cur || !confirm('¿Marcar TODAS las tareas de "'+cur.nombre+'" como completadas?')) return;
+  call('markProjectComplete', [cur.id], function(r){ toast('✅ '+r.completadas+' tareas completadas','ok'); loadDetail(cur.id); scheduleRefresh(); });
+});
+
+document.getElementById('btnArchive').addEventListener('click', function(){
+  if(!cur || !confirm('¿Archivar "'+cur.nombre+'"? Se puede restaurar.')) return;
+  call('archiveProject', [cur.id], function(){ toast('✅ Proyecto archivado','ok'); document.getElementById('form_area').style.display='none'; loadProjects(); scheduleRefresh(); });
+});
+
+['nt_opt','nt_prob','nt_pes'].forEach(function(id){ document.getElementById(id).addEventListener('input', function(){
+  var v=pertCalc(document.getElementById('nt_opt').value,document.getElementById('nt_prob').value,document.getElementById('nt_pes').value);
+  document.getElementById('nt_pert').textContent = v===''?'—':v;
+}); });
+
+document.getElementById('btnAddTask').addEventListener('click', function(){
+  if(!cur) return;
+  var nom=document.getElementById('nt_nombre').value.trim();
+  if(!nom){ showError('Escribe el nombre de la tarea'); return; }
+  var fi=document.getElementById('nt_inicio').value, ff=document.getElementById('nt_fin').value;
+  if(fi && ff && ff<fi){ showError('La fecha de fin no puede ser anterior al inicio'); return; }
+  if(!taskInRange(fi,ff)){ showError(rangeMsg()); return; }
+  var ntOwner=document.getElementById('nt_owner').value||cur.owner_id;
+  var ntOwnerName=(allPersons.filter(function(x){return x.id===ntOwner;})[0]||{}).nombre||'';
+  var payload={ project_id:cur.id, nombre:nom, owner_ids:ntOwner, fecha_inicio:fi, fecha_fin:ff,
+    t_optimista:document.getElementById('nt_opt').value, t_probable:document.getElementById('nt_prob').value, t_pesimista:document.getElementById('nt_pes').value };
+  var temp={ id:'tmp', nombre:nom, fecha_inicio:fi, fecha_fin:ff, completada:false, owner_ids:ntOwner, owner_names:ntOwnerName,
+    t_optimista:payload.t_optimista, t_probable:payload.t_probable, t_pesimista:payload.t_pesimista, pert_horas:pertCalc(payload.t_optimista,payload.t_probable,payload.t_pesimista) };
+  cur.tasks.push(temp); renderTasks();
+  document.getElementById('nt_nombre').value=''; document.getElementById('nt_inicio').value=''; document.getElementById('nt_fin').value='';
+  document.getElementById('nt_opt').value=''; document.getElementById('nt_prob').value=''; document.getElementById('nt_pes').value=''; document.getElementById('nt_pert').textContent='—';
+  call('addTask', [payload], function(res){ temp.id=res.task_id; toast('✅ Tarea agregada','ok'); scheduleRefresh(); loadDetail(cur.id); },
+    function(){ loadDetail(cur.id); });
+});
+
+// init
+call('whoAmI', [], function(w){
+  me=w;
+  if(!me.editAllowedNow){
+    var lb=document.getElementById('lockbanner');
+    lb.style.display='block';
+    lb.innerHTML='🔒 Hoy la edición del equipo está bloqueada. Solo se puede actualizar los <b>'+esc(me.lockDayName)+'</b>. Puedes revisar, pero guardar quedará restringido.';
+  }
+  call('getActivePersonsForUI', [], function(p){ allPersons=p; populateOwnerFilter(); loadProjects(); });
+});
+</script>
+</body></html>

@@ -1,0 +1,51 @@
+<style>
+*{box-sizing:border-box;font-family:'Inter','Segoe UI',Arial,sans-serif}
+body{padding:18px;color:#243244;background:#fff;font-size:13px;margin:0}
+h2{color:#0F2D52;font-size:18px;margin:0 0 4px;font-weight:800}
+.subtitle{color:#6B7280;font-size:12px;margin:0 0 18px}
+label{display:block;font-weight:700;color:#0F2D52;margin:14px 0 4px;font-size:12px;letter-spacing:.3px}
+.hint{color:#6B7280;font-size:11px;font-weight:400;margin:0 0 6px}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid #D6DBE0;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1F4E8C}
+textarea{resize:vertical;min-height:60px}
+.row{display:flex;gap:8px}
+.row > div{flex:1}
+.check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12px}
+.check input{width:auto}
+.btn{background:#0F2D52;color:#fff;border:none;border-radius:6px;padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;width:100%;margin-top:14px}
+.btn:hover{background:#1F4E8C}
+.btn:disabled{background:#9CA3AF;cursor:not-allowed}
+.btn.amber{background:#E0A82E;color:#0F2D52}
+.btn.amber:hover{background:#c9961f}
+.btn.ok{background:#3F8C5C}
+.btn.ok:hover{background:#33724a}
+.btn.danger{background:#fff;color:#C0392B;border:1px solid #C0392B}
+.btn.danger:hover{background:#C0392B;color:#fff}
+.btn.secondary{background:#fff;color:#0F2D52;border:2px solid #0F2D52}
+.btn.sm{width:auto;padding:6px 12px;margin:0;font-size:12px}
+.msg{margin-top:12px;padding:10px;border-radius:6px;font-size:12px;display:none}
+.msg.ok{background:#E3F0E8;color:#3F8C5C;border:1px solid #3F8C5C;display:block}
+.msg.err{background:#F7E4E1;color:#C0392B;border:1px solid #C0392B;display:block}
+.msg.warn{background:#FBF1E5;color:#B8722E;border:1px solid #B8722E;display:block}
+.divider{height:1px;background:#E5E7EB;margin:18px 0}
+.req{color:#C0392B}
+.info-box{background:#E6EEF7;border-left:3px solid #1F4E8C;padding:8px 12px;border-radius:0 4px 4px 0;margin:0 0 12px;font-size:12px;line-height:1.5;color:#243244}
+.info-box b{color:#0F2D52}
+.loading{text-align:center;color:#6B7280;padding:20px;font-style:italic}
+.field-readonly{padding:8px 10px;background:#F4F6F8;border-radius:6px;font-size:13px;color:#374151;border:1px solid #E5E7EB}
+.proj-info{background:#F4F6F8;border-left:3px solid #1F4E8C;padding:8px 12px;border-radius:0 4px 4px 0;margin:8px 0 16px;font-size:12px;line-height:1.5;color:#243244}
+.proj-info b{color:#0F2D52}
+/* lista de tareas del editor */
+.tasks{margin-top:8px}
+.task{display:flex;align-items:flex-start;gap:8px;padding:8px;border:1px solid #E5E7EB;border-radius:6px;margin-bottom:6px;background:#fff}
+.task .name{flex:1;font-size:12.5px}
+.task .meta{color:#6B7280;font-size:11px}
+.task.done .name{text-decoration:line-through;color:#9aa3af}
+.task .acts{display:flex;gap:6px}
+.icon{cursor:pointer;font-size:14px;border:none;background:none;padding:2px}
+.task-edit input{font-size:12px;padding:5px 7px;margin:2px 0}
+.section-title{color:#0F2D52;font-weight:800;font-size:14px;margin:18px 0 6px;display:flex;align-items:center}
+.section-title .count{color:#6B7280;font-weight:500;font-size:12px;margin-left:6px}
+.colorbar{height:5px;display:flex;margin:-18px -18px 14px}
+.colorbar i{flex:1}
+</style>

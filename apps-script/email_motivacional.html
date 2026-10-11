@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gracias por tu trabajo este mes</title>
+<?!= HtmlService.createHtmlOutputFromFile('_styles').getContent() ?>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:24px 0"><tr><td align="center">
+<table class="wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+
+  <tr><td bgcolor="#0F2D52" style="background:#0F2D52;color:#ffffff;padding:24px 28px 28px">
+    <?!= HtmlService.createHtmlOutputFromFile('_brand_bar').getContent() ?>
+    <h1 style="font-size:24px;font-weight:700;margin:0 0 6px;letter-spacing:-.3px;color:#ffffff">Gracias por tu trabajo este mes</h1>
+    <p style="font-size:14px;color:#D6DBE0;margin:0;font-weight:400">Cierre de <?= month_label ?></p>
+  </td></tr>
+
+  <tr><td align="center" style="padding:48px 32px;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+
+    <p style="font-size:18px;margin:0 0 32px;color:#243244">Hola <strong><?= nombre_corto ?></strong>,</p>
+
+    <p style="font-size:19px;line-height:1.7;color:#243244;font-weight:500;margin:0 0 32px;font-style:italic">
+      "<?= frase_principal ?>"
+    </p>
+
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 32px"><tr><td height="1" width="60" bgcolor="#E5E7EB" style="background:#E5E7EB;height:1px;line-height:1px;font-size:0">&nbsp;</td></tr></table>
+
+    <p style="font-size:16px;color:#4B5563;line-height:1.7;margin:0 0 32px">
+      <?= mensaje_corto ?>
+    </p>
+
+    <p style="font-size:14px;color:#6B7280;margin:32px 0 0">— <?= autor ?></p>
+
+  </td></tr>
+
+  <tr><td style="background:#FAFAFB;color:#6B7280;font-size:11px;padding:18px 28px;border-top:1px solid #E5E7EB;line-height:1.6">
+    Mensaje de cierre de mes · enviado el último día de <?= month_label ?>.<br>
+    Mensaje rotativo: cada mes lleva una frase distinta.<br>
+    Sistema de Proyectos v2 · <a href="mailto:<?= support_email ?>" style="color:#1F4E8C;text-decoration:none"><strong style="color:#4B5563"><?= support_email ?></strong></a>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>

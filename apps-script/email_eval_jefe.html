@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evaluación mensual del equipo</title>
+<?!= HtmlService.createHtmlOutputFromFile('_styles').getContent() ?>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:24px 0"><tr><td align="center">
+<table class="wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+
+  <tr><td style="background:#0F2D52;color:#ffffff;padding:24px 28px 28px">
+    <?!= HtmlService.createHtmlOutputFromFile('_brand_bar').getContent() ?>
+    <h1 style="font-size:24px;font-weight:700;margin:0 0 6px;letter-spacing:-.3px;color:#ffffff">Evaluación mensual del equipo</h1>
+    <p style="font-size:14px;color:#D6DBE0;margin:0;font-weight:400"><?= month_label ?> · <?= today_display ?></p>
+  </td></tr>
+
+  <tr><td style="padding:28px;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+
+    <p style="font-size:16px;margin:0 0 20px;color:#243244">Buenos días <strong><?= nombre_corto ?></strong>,</p>
+    <p style="font-size:15px;color:#4B5563;margin:0 0 24px;line-height:1.6">Es el primer día del mes. Te dejo el insumo para evaluar al equipo este <?= month_label ?>. Cada persona ya tiene sus métricas calculadas. Asigna a cada una una <b style="color:#243244">calificación (1-5)</b> y un <b style="color:#243244">comentario</b> en la hoja privada, <b style="color:#243244">a más tardar el día 3</b>.</p>
+
+    <div style="background:#E8F1EC;border-left:4px solid #3F8C5C;padding:12px 16px;border-radius:0 4px 4px 0;margin:0 0 16px;font-size:13px;color:#243244">
+      <b style="color:#3F8C5C">📅 El día 4</b> se envía a cada persona su evaluación con lo que hayas calificado. Las filas sin calificación/comentario no se envían.
+    </div>
+
+    <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;padding:10px 14px;margin:0 0 16px;font-size:12px;color:#7F1D1D;text-align:center">
+      <b style="display:block;margin-bottom:2px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7F1D1D">Confidencial</b>
+      Esta evaluación es privada. Solo tú y la persona evaluada ven cada calificación y comentario.
+    </div>
+
+    <div style="background:#E6EEF7;border-left:4px solid #1F4E8C;padding:14px 16px;border-radius:0 4px 4px 0;margin:0 0 20px">
+      <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:0 0 6px">Cómo leer (todo por proyecto)</p>
+      <p style="margin:0;font-size:14px;color:#4B5563;line-height:1.55">
+        <b style="color:#243244">Proyectos asignados:</b> proyectos de los que es responsable.<br>
+        <b style="color:#243244">Avance promedio:</b> promedio de % de avance de sus proyectos.<br>
+        <b style="color:#243244">Avanzaron este mes:</b> en cuántos de sus proyectos hubo avance en el mes.<br>
+        <b style="color:#243244">Completados este mes:</b> proyectos que llegaron al 100%.<br>
+        <b style="color:#243244">Estado:</b> <span style="color:#3F8C5C">Al día</span> si no tiene vencidos; <span style="color:#C0392B">Atrasado</span> si algún proyecto pasó su fecha fin.
+      </p>
+    </div>
+
+    <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:28px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Insumos para evaluar</h3>
+
+    <? personas.forEach(function(p){ ?>
+      <div style="border:1px solid #E5E7EB;border-left:4px solid <?= p.al_dia ? '#3F8C5C' : '#C0392B' ?>;border-radius:6px;padding:16px 18px;margin:0 0 14px;background:#ffffff">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 10px">
+          <tr>
+            <td style="vertical-align:middle"><span style="color:#0F2D52;font-size:16px;font-weight:700"><?= p.nombre ?></span></td>
+            <td align="right" style="vertical-align:middle"><span style="display:inline-block;background:<?= p.al_dia ? '#E8F1EC' : '#FBEDEB' ?>;color:<?= p.al_dia ? '#3F8C5C' : '#C0392B' ?>;font-weight:700;font-size:12px;padding:4px 10px;border-radius:20px"><?= p.estado_label ?></span></td>
+          </tr>
+        </table>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px">
+          <tr>
+            <td style="padding:10px 0;border-bottom:1px solid #E5E7EB;color:#243244;font-weight:600;width:70%">Proyectos asignados</td>
+            <td align="right" style="padding:10px 0;border-bottom:1px solid #E5E7EB;color:#0F2D52;font-weight:700;font-size:18px"><?= p.projects_count ?></td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;border-bottom:1px solid #E5E7EB;color:#243244;font-weight:600">Avance promedio</td>
+            <td align="right" style="padding:10px 0;border-bottom:1px solid #E5E7EB;color:#1F4E8C;font-weight:700;font-size:18px"><?= p.avg_progress ?>%</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;border-bottom:1px solid #E5E7EB;color:#243244;font-weight:600">Avanzaron este mes</td>
+            <td align="right" style="padding:10px 0;border-bottom:1px solid #E5E7EB;color:#243244;font-weight:700;font-size:18px"><?= p.projects_advanced ?> de <?= p.projects_count ?></td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;color:#243244;font-weight:600">Completados este mes</td>
+            <td align="right" style="padding:10px 0;color:<?= p.projects_completed > 0 ? '#3F8C5C' : '#0F2D52' ?>;font-weight:700;font-size:18px"><?= p.projects_completed ?></td>
+          </tr>
+        </table>
+      </div>
+    <? }); ?>
+
+    <div style="background:#E6EEF7;border-left:4px solid #1F4E8C;padding:14px 16px;border-radius:0 4px 4px 0;margin:0 0 20px">
+      <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:0 0 6px">Escala de calificación sugerida</p>
+      <p style="margin:0;font-size:14px;color:#4B5563;line-height:1.55">
+        <b style="color:#243244">5 — Excepcional:</b> superó expectativas con calidad e iniciativa propia.<br>
+        <b style="color:#243244">4 — Sobresale:</b> entregas a tiempo, sin recordatorios.<br>
+        <b style="color:#243244">3 — Cumple:</b> cumple lo asignado con calidad esperada.<br>
+        <b style="color:#243244">2 — Por mejorar:</b> entregas tarde o requiere seguimiento.<br>
+        <b style="color:#243244">1 — Crítico:</b> incumple sistemáticamente, requiere intervención.
+      </p>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 12px">
+      <tr><td align="center">
+        <a href="<?= link_eval_sheet ?>" style="display:inline-block;background:#0F2D52;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:6px;font-size:14px;font-weight:600;letter-spacing:.3px">Abrir hoja de evaluación</a>
+      </td></tr>
+    </table>
+
+    <p style="font-size:13px;color:#6B7280;margin-top:16px;line-height:1.6">El <b>día 4</b> cada persona recibe su evaluación con lo que hayas calificado hasta entonces. El histórico queda en la misma hoja mes a mes.</p>
+
+  </td></tr>
+
+  <tr><td style="background:#FAFAFB;color:#6B7280;font-size:11px;padding:18px 28px;border-top:1px solid #E5E7EB;line-height:1.6">
+    Generado automáticamente el primer día del mes a las 08:30.<br>
+    Solo para ti · Confidencial · Sistema de Proyectos · <a href="mailto:<?= support_email ?>" style="color:#1F4E8C;text-decoration:none"><strong style="color:#4B5563"><?= support_email ?></strong></a>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>

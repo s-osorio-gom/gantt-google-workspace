@@ -1,0 +1,121 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+body{font-family:'Inter','Segoe UI',Arial,sans-serif;padding:18px;color:#1A1A1A;background:#fff;font-size:13px}
+h2{color:#1E2A55;font-size:18px;margin:0 0 4px}
+.subtitle{color:#6B7280;font-size:12px;margin:0 0 18px}
+label{display:block;font-weight:600;color:#1E2A55;margin:14px 0 4px;font-size:12px;letter-spacing:.3px}
+.hint{color:#6B7280;font-size:11px;font-weight:400;margin:0 0 6px}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:5px;font-size:13px;font-family:inherit;box-sizing:border-box}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#2E4380}
+.row{display:flex;gap:8px}
+.row > div{flex:1}
+.check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12px}
+.check input{width:auto}
+.btn{background:#1E2A55;color:#fff;border:none;border-radius:5px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:13px;width:100%;margin-top:18px}
+.btn:hover{background:#2E4380}
+.btn:disabled{background:#9CA3AF;cursor:not-allowed}
+.msg{margin-top:12px;padding:10px;border-radius:5px;font-size:12px;display:none}
+.msg.ok{background:#E8F1EC;color:#2E7D5B;border:1px solid #2E7D5B;display:block}
+.msg.err{background:#F8E5E0;color:#C44536;border:1px solid #C44536;display:block}
+.divider{height:1px;background:#E5E7EB;margin:18px 0}
+.req{color:#C44536}
+</style>
+</head><body>
+<h2>Agregar persona</h2>
+<p class="subtitle">Nueva persona al equipo EQUIPO</p>
+
+<form id="frm">
+  <label>Nombre completo <span class="req">*</span></label>
+  <p class="hint">Ej: Camila Martínez</p>
+  <input id="nombre" required>
+
+  <label>Email corporativo <span class="req">*</span></label>
+  <p class="hint">Debe usar el dominio configurado en 00_Config</p>
+  <input id="email" type="email" required>
+
+  <label>Rol</label>
+  <select id="rol">
+    <option>Analista EQUIPO</option>
+    <option>Jefe Operativo EQUIPO</option>
+    <option>Jefe del Canal</option>
+    <option>Coordinador</option>
+    <option>Otro</option>
+  </select>
+
+  <label>Jefe directo</label>
+  <p class="hint">Quien hace 1-on-1 con esta persona</p>
+  <select id="jefe_id"><option value="">-- ninguno --</option></select>
+
+  <div class="row">
+    <div>
+      <label>Frente</label>
+      <input id="frente" value="EQUIPO">
+    </div>
+    <div>
+      <label>Zona</label>
+      <input id="zona" placeholder="Ej: Región Norte">
+    </div>
+  </div>
+
+  <div class="check">
+    <input type="checkbox" id="es_jefe">
+    <label for="es_jefe" style="margin:0">Esta persona es un jefe (recibe ejecutivo, no individual)</label>
+  </div>
+
+  <label>Observaciones</label>
+  <textarea id="observaciones" rows="2" placeholder="Opcional"></textarea>
+
+  <button type="submit" class="btn" id="btnSave">Guardar</button>
+  <div id="msg" class="msg"></div>
+</form>
+
+<script>
+function loadJefes(){
+  google.script.run.withSuccessHandler(function(list){
+    var sel = document.getElementById('jefe_id');
+    list.forEach(function(p){
+      var opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.nombre + ' (' + p.rol + ')';
+      sel.appendChild(opt);
+    });
+  }).getActivePersonsForUI();
+}
+loadJefes();
+
+document.getElementById('frm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var btn = document.getElementById('btnSave');
+  var msg = document.getElementById('msg');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  msg.className = 'msg';
+  var payload = {
+    nombre: document.getElementById('nombre').value.trim(),
+    email: document.getElementById('email').value.trim().toLowerCase(),
+    rol: document.getElementById('rol').value,
+    jefe_directo_id: document.getElementById('jefe_id').value,
+    frente: document.getElementById('frente').value,
+    zona: document.getElementById('zona').value,
+    es_jefe: document.getElementById('es_jefe').checked,
+    observaciones: document.getElementById('observaciones').value
+  };
+  google.script.run
+    .withSuccessHandler(function(res){
+      msg.className = 'msg ok';
+      msg.textContent = '✅ Agregada: ' + res.person_id + '. Correo de bienvenida enviado.';
+      document.getElementById('frm').reset();
+      google.script.run
+        .withSuccessHandler(function(){ btn.disabled = false; btn.textContent = 'Guardar'; })
+        .withFailureHandler(function(){ btn.disabled = false; btn.textContent = 'Guardar'; })
+        .refrescarVistasSilencioso();
+    })
+    .withFailureHandler(function(err){
+      msg.className = 'msg err';
+      msg.textContent = '❌ ' + err.message;
+      btn.disabled = false; btn.textContent = 'Guardar';
+    })
+    .addPerson(payload);
+});
+</script>
+</body></html>

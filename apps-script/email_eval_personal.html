@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tu evaluación</title>
+<?!= HtmlService.createHtmlOutputFromFile('_styles').getContent() ?>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:24px 0"><tr><td align="center">
+<table class="wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+
+  <tr><td style="background:#0F2D52;color:#ffffff;padding:24px 28px 28px">
+    <?!= HtmlService.createHtmlOutputFromFile('_brand_bar').getContent() ?>
+    <h1 style="font-size:24px;font-weight:700;margin:0 0 6px;letter-spacing:-.3px;color:#ffffff">Tu evaluación de <?= month_label ?></h1>
+    <p style="font-size:14px;color:#D6DBE0;margin:0;font-weight:400">Confidencial</p>
+  </td></tr>
+
+  <tr><td style="padding:28px;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+
+    <p style="font-size:16px;margin:0 0 20px;color:#243244">Hola <strong><?= nombre_corto ?></strong>,</p>
+    <p style="font-size:15px;color:#4B5563;margin:0 0 24px;line-height:1.6"><?= evaluator_name ?> completó tu evaluación del mes de <?= month_label ?>. Aquí está el resumen.</p>
+
+    <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;padding:10px 14px;margin:0 0 16px;font-size:12px;color:#7F1D1D;text-align:center">
+      <b style="display:block;margin-bottom:2px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7F1D1D">Confidencial</b>
+      Esta evaluación es privada entre tú y <?= evaluator_name ?>. Nadie más del equipo tiene acceso.
+    </div>
+
+    <div style="background:#E6EEF7;border-left:4px solid #1F4E8C;padding:14px 16px;border-radius:0 4px 4px 0;margin:0 0 20px">
+      <p style="margin:0;font-size:14px;color:#4B5563;line-height:1.55">
+        Tu evaluación mira tus <b style="color:#243244">proyectos</b>: cuántos tienes, cuánto avanzaron y si vas
+        al día con sus fechas. (Las tareas mueven el avance, pero lo que se mide es el proyecto.)
+      </p>
+    </div>
+
+    <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:28px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Tus proyectos este mes</h3>
+
+    <div style="border:1px solid #E5E7EB;border-left:4px solid <?= al_dia ? '#3F8C5C' : '#C0392B' ?>;border-radius:6px;padding:6px 18px 6px;margin:0 0 14px;background:#ffffff">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px">
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #E5E7EB;color:#243244;font-weight:600;width:65%">Proyectos asignados</td>
+          <td align="right" style="padding:12px 0;border-bottom:1px solid #E5E7EB;color:#0F2D52;font-weight:700;font-size:18px"><?= projects_count ?></td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #E5E7EB;color:#243244;font-weight:600">Avance promedio de tus proyectos</td>
+          <td align="right" style="padding:12px 0;border-bottom:1px solid #E5E7EB;color:#1F4E8C;font-weight:700;font-size:18px"><?= avg_progress ?>%</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #E5E7EB;color:#243244;font-weight:600">Avanzaron este mes</td>
+          <td align="right" style="padding:12px 0;border-bottom:1px solid #E5E7EB;color:#243244;font-weight:700;font-size:18px"><?= projects_advanced ?> de <?= projects_count ?></td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #E5E7EB;color:#243244;font-weight:600">Completados este mes</td>
+          <td align="right" style="padding:12px 0;border-bottom:1px solid #E5E7EB;color:<?= projects_completed > 0 ? '#3F8C5C' : '#0F2D52' ?>;font-weight:700;font-size:18px"><?= projects_completed ?></td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;color:#243244;font-weight:600">Estado de tus fechas</td>
+          <td align="right" style="padding:12px 0;font-weight:700;font-size:15px;color:<?= al_dia ? '#3F8C5C' : '#C0392B' ?>"><?= estado_label ?></td>
+        </tr>
+      </table>
+    </div>
+
+    <? if (calificacion) { ?>
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:28px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Calificación de <?= evaluator_name ?></h3>
+      <div style="border:1px solid #E5E7EB;border-left:4px solid #3F8C5C;border-radius:6px;padding:24px;background:#ffffff;text-align:center">
+        <p style="font-size:48px;font-weight:700;color:#3F8C5C;margin:0 0 4px;line-height:1"><?= calificacion ?> / 5</p>
+        <? if (calificacion_label) { ?>
+          <p style="font-size:14px;color:#6B7280;margin:0;letter-spacing:1px;text-transform:uppercase;font-weight:600"><?= calificacion_label ?></p>
+        <? } ?>
+      </div>
+    <? } ?>
+
+    <? if (comentario && comentario.trim()) { ?>
+      <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:28px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Comentario de <?= evaluator_name ?></h3>
+      <div style="background:#E6EEF7;border:1px solid #1F4E8C;border-radius:6px;padding:14px 16px;margin:0 0 20px">
+        <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:0 0 6px">Mensaje para ti</p>
+        <p style="margin:0;font-size:14px;color:#243244;line-height:1.6">"<?= comentario ?>"</p>
+      </div>
+    <? } ?>
+
+    <p style="font-size:13px;color:#6B7280;margin-top:24px;line-height:1.6">
+      Si quieres conversar sobre esta evaluación, agenda 15 minutos con <?= evaluator_name ?> directamente.
+      Las evaluaciones quedan guardadas en el sistema y solo <?= evaluator_name ?> y tú las pueden ver.
+    </p>
+
+  </td></tr>
+
+  <tr><td style="background:#FAFAFB;color:#6B7280;font-size:11px;padding:18px 28px;border-top:1px solid #E5E7EB;line-height:1.6">
+    Tu evaluación de <?= month_label ?>.<br>
+    Confidencial · solo tú y <?= evaluator_name ?> tienen acceso.<br>
+    Sistema de Proyectos · <a href="mailto:<?= support_email ?>" style="color:#1F4E8C;text-decoration:none"><strong style="color:#4B5563"><?= support_email ?></strong></a>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>

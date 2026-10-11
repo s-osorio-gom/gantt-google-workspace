@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Avance semanal del equipo</title>
+<?!= HtmlService.createHtmlOutputFromFile('_styles').getContent() ?>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:24px 0"><tr><td align="center">
+<table class="wrap" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+
+  <tr><td style="background:#0F2D52;color:#ffffff;padding:24px 28px 28px;font-family:'Inter','Segoe UI',Arial,sans-serif">
+    <?!= HtmlService.createHtmlOutputFromFile('_brand_bar').getContent() ?>
+    <h1 style="font-size:24px;font-weight:700;margin:0 0 6px;letter-spacing:-.3px;color:#ffffff">Avance semanal del equipo</h1>
+    <p style="font-size:14px;color:#D6DBE0;margin:0;font-weight:400"><?= period_label ?></p>
+  </td></tr>
+
+  <tr><td style="padding:28px;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#243244">
+
+    <p style="font-size:16px;margin:0 0 20px;color:#243244">Buenos días <strong><?= nombre_corto ?></strong>,</p>
+
+    <table width="100%" cellpadding="0" cellspacing="8" border="0" style="margin:0 -8px 10px">
+      <tr>
+        <td bgcolor="#1F4E8C" align="center" style="background-color:#1F4E8C;color:#ffffff;padding:18px 8px;border-radius:6px;width:33%">
+          <div style="font-size:34px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:8px"><?= n_en_curso ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">En curso</div>
+        </td>
+        <td bgcolor="#3F8C5C" align="center" style="background-color:#3F8C5C;color:#ffffff;padding:18px 8px;border-radius:6px;width:33%">
+          <div style="font-size:34px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:8px"><?= n_completados ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">Completados</div>
+        </td>
+        <td bgcolor="#C0392B" align="center" style="background-color:#C0392B;color:#ffffff;padding:18px 8px;border-radius:6px;width:33%">
+          <div style="font-size:34px;font-weight:700;line-height:1;color:#ffffff;margin-bottom:8px"><?= n_vencidos ?></div>
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#ffffff">Vencidos</div>
+        </td>
+      </tr>
+    </table>
+    <p style="text-align:center;font-size:12px;color:#6B7280;margin:0 0 18px"><b style="color:#243244"><?= n_total ?></b> proyectos en total</p>
+
+    <div style="background:#E6EEF7;border-left:4px solid #1F4E8C;padding:14px 16px;border-radius:0 4px 4px 0;margin:0 0 22px">
+      <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:0 0 6px">Lectura de la semana</p>
+      <p style="margin:0;font-size:14px;color:#4B5563;line-height:1.55">
+        Se cerraron <b style="color:#243244"><?= total_closed_tasks_week ?></b> tarea<?= total_closed_tasks_week===1?'':'s' ?> esta semana.
+        <?= lectura ?>
+      </p>
+    </div>
+
+    <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Avance por persona — insumo para 1-on-1</h3>
+
+    <? personas.forEach(function(pe){ var leftColor = pe.avanzo ? '#3F8C5C' : '#9AA3B2'; ?>
+      <div style="border:1px solid #E5E7EB;border-left:4px solid <?= leftColor ?>;border-radius:6px;padding:14px 16px;margin:0 0 10px;background:#ffffff">
+        <p style="font-size:15px;font-weight:700;color:#0F2D52;margin:0 0 4px"><?= pe.nombre ?></p>
+        <p style="font-size:13px;color:#4B5563;margin:0 0 8px">
+          Cerró <b style="color:#243244"><?= pe.closed_this_week ?></b> tarea<?= pe.closed_this_week===1?'':'s' ?> esta semana.
+        </p>
+        <? if (pe.proyectos_avance.length > 0) { ?>
+          <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#3F8C5C;font-weight:700;margin:0 0 6px">Proyectos que avanzaron</p>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;font-size:13px">
+            <? pe.proyectos_avance.forEach(function(pa){ ?>
+              <tr>
+                <td style="padding:3px 0;color:#243244"><?= pa.nombre ?></td>
+                <td align="right" style="padding:3px 0;white-space:nowrap"><span style="color:#3F8C5C;font-weight:700">▲ +<?= pa.avance_semana ?>%</span> <span style="color:#6B7280;font-size:12px">(<?= pa.cerradas ?> tarea<?= pa.cerradas===1?'':'s' ?>)</span></td>
+              </tr>
+            <? }); ?>
+          </table>
+        <? } else { ?>
+          <p style="font-size:13px;color:#9AA3B2;margin:0 0 8px">Sin avance registrado esta semana.</p>
+        <? } ?>
+        <p style="font-size:12px;color:#6B7280;margin:0">Carga: <b style="color:#243244"><?= pe.n_projects ?> proyectos · <?= pe.n_tasks ?> tareas</b> (<?= pe.load_pct ?>% del equipo)</p>
+        <? if (pe.comentario && pe.comentario.trim()) { ?>
+          <div style="font-size:13px;background:#FFFBEB;border-left:3px solid #E0A82E;padding:8px 10px;border-radius:0 4px 4px 0;margin:8px 0 0;color:#243244;font-style:italic;line-height:1.5">
+            <b style="color:#92400E;font-style:normal">Comentario:</b> "<?= pe.comentario ?>"
+          </div>
+        <? } ?>
+      </div>
+    <? }); ?>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 12px">
+      <tr><td align="center">
+        <a href="<?= link_dashboard ?>" style="display:inline-block;background:#0F2D52;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:6px;font-size:14px;font-weight:600;letter-spacing:.3px;font-family:'Inter','Segoe UI',Arial,sans-serif">Ver el resumen completo</a>
+      </td></tr>
+    </table>
+
+  </td></tr>
+
+  <tr><td style="background:#FAFAFB;color:#6B7280;font-size:11px;padding:18px 28px;border-top:1px solid #E5E7EB;line-height:1.6;font-family:'Inter','Segoe UI',Arial,sans-serif">
+    Generado automáticamente el <?= today_display ?> a las <?= today_time ?> · viernes.<br>
+    Sistema de Proyectos · ¿Dudas? <a href="mailto:<?= support_email ?>" style="color:#1F4E8C;text-decoration:none"><strong style="color:#4B5563"><?= support_email ?></strong></a>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>
