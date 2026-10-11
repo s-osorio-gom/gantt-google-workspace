@@ -126,6 +126,7 @@ python3 herramientas/verificar_apps_script.py apps-script
   [OK  ] Sin plantillas huérfanas — 24 en uso
   [OK  ] Ninguna función definida dos veces — 288 funciones
   [OK  ] Menús, disparadores y paneles llaman funciones que existen — todas resuelven
+  [OK  ] Menú Admin comprueba admin en el servidor — 20 / 20 con assertAdmin()
   [OK  ] innerHTML de los paneles sin datos sin escapar — todo pasa por esc()
   [OK  ] Fechas en la zona de appsscript.json, no en una escrita a mano — usan tz()
   [OK  ] appsscript.json válido — 7 permisos · V8 · America/Bogota

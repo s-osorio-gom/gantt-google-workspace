@@ -208,6 +208,7 @@ function getSheetIdByName(name) {
  * Atajo desde menú: corre validaciones y muestra alerta.
  */
 function runValidationsAndAlert() {
+  assertAdmin('validar los datos desde el menú Admin');
   const result = runValidations();
   SpreadsheetApp.getUi().alert(
     'Validaciones completadas',

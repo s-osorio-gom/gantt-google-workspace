@@ -201,6 +201,7 @@ function reconstruirTodo() {
 }
 
 function reconstruirVistasDesdeMenu() {
+  assertAdmin('reconstruir las vistas');
   const pasos = reconstruirTodo();
   const ss = getSS();
   const sh = ss.getSheetByName('Resumen');

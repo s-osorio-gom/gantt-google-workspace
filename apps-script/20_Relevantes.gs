@@ -151,6 +151,7 @@ function _diag_pruebaRelevanteCompleto() {
 
 /** Atajo admin/el jefe operativo desde menú. */
 function enviarRelevantesDesdeMenu() {
+  assertAdmin('enviar los relevantes comentados');
   const r = enviarRelevantesComentados();
   SpreadsheetApp.getUi().alert('Relevantes comentados',
     'Enviados a ' + (r.sent || 0) + ' persona(s)' + (r.error ? ('\n\n' + r.error) : '') +

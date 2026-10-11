@@ -383,6 +383,35 @@ prueba('Día configurado 0 o negativo se trata como 1; texto inválido usa el de
         { eval: ['2027-03-01'], rec: ['2027-03-01'], dia4: ['2027-03-01'] });
 });
 
+// ── menú Admin: control en el servidor ─────────────────────────────────────
+const UI_DOBLE = { getUi: () => ({ alert() {}, ButtonSet: { OK: 0 } }) };
+function ejecutivosAhora(quien) {
+  estado.config = { ADMIN_EMAIL: 'admin@example.com' };
+  estado.activo = quien;
+  let enviados = 0, error = '';
+  con({
+    SpreadsheetApp: UI_DOBLE, generateSnapshot: () => {},
+    sendExecutiveReports: () => { enviados++; return { sent: 1, total: 1 }; }
+  }, () => { try { G('sendExecNowFromMenu')(); } catch (e) { error = e.message; } });
+  return { enviados, error };
+}
+prueba('Menú Admin: un no-admin que invoca «Ejecutivos (ahora)» no envía nada', () => {
+  const r = ejecutivosAhora('ana@example.com');
+  igual([r.enviados, /administrador/.test(r.error)], [0, true]);
+});
+prueba('Menú Admin: el admin sí puede', () => {
+  igual(ejecutivosAhora('admin@example.com'), { enviados: 1, error: '' });
+});
+prueba('Sheet nuevo sin 00_Config: crear pestañas base sigue permitido sin admin', () => {
+  estado.activo = 'ana@example.com';
+  let creo = false;
+  con({
+    SpreadsheetApp: UI_DOBLE, getSS: () => ({ getSheetByName: () => null }),
+    crearPestanasBase: () => { creo = true; return { creadas: [], claves: [] }; }
+  }, () => G('crearPestanasBaseDesdeMenu')());
+  igual(creo, true);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);

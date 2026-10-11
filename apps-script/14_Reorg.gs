@@ -105,6 +105,7 @@ function _reorgProyectos() {
  * Punto de entrada desde el menú (con confirmación + alertas).
  */
 function reorganizarDesdeMenu() {
+  assertAdmin('reorganizar el equipo');
   const ui = SpreadsheetApp.getUi();
   const r = ui.alert('🔄 Reorganizar equipo y proyectos',
     'Esto va a RECONSTRUIR las pestañas 01_Personas, 02_Proyectos y 03_Tareas con el tablero nuevo.\n\n' +

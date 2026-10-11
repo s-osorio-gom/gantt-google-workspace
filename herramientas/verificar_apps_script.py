@@ -12,6 +12,7 @@ lunes y el correo no sale. Esto adelanta lo comprobable:
     plantillas    cada renderTemplate('x') / include('x') tiene su x.html
     duplicados    ninguna función definida dos veces
     referencias   menús, disparadores y google.script.run apuntan a funciones que existen
+    admin         cada entrada del menú Admin llama assertAdmin() en el servidor
     innerHTML     los paneles no concatenan datos sin esc() en innerHTML
     zona horaria  ninguna fecha usa una zona escrita a mano (sale de appsscript.json)
     manifiesto    appsscript.json es válido y declara sus permisos
@@ -45,6 +46,7 @@ INCLUDE = re.compile(r"""createHtmlOutputFromFile\(\s*['"]([^'"]+)['"]""")
 MENU = re.compile(r"""addItem\([^;]*?,\s*['"]([A-Za-z_$][\w$]*)['"]\s*\)""")
 TRIGGER = re.compile(r"""newTrigger\(\s*['"]([A-Za-z_$][\w$]*)['"]""")
 CALL_HELPER = re.compile(r"""\bcall\(\s*['"]([A-Za-z_$][\w$]*)['"]""")
+MENU_ADMIN = re.compile(r"""adminMenu\.addItem\([^;]*?,\s*['"]([A-Za-z_$][\w$]*)['"]\s*\)""")
 ZONA_FIJA = re.compile(r"""(?:formatDate\([^,()]+,\s*|inTimezone\(\s*)['"][A-Za-z]+/[A-Za-z_]+['"]""")
 
 # Dominios que sí pueden aparecer: son los de los ejemplos.
@@ -155,6 +157,32 @@ def _operando_seguro(op: str, texto: str, prof: int = 0) -> bool:
         if m:
             return all(_operando_seguro(o, texto, 1) for o in _partes(m.group(1), "+"))
     return False
+
+
+def cuerpo_funcion(texto: str, nombre: str) -> str | None:
+    """Texto de `function nombre(...) { ... }` (llaves balanceadas, fuera de comillas)."""
+    m = re.search(r"^\s*function\s+" + re.escape(nombre) + r"\s*\(", texto, re.M)
+    if not m:
+        return None
+    i = texto.index("{", m.end())
+    prof, q, j = 0, None, i
+    while j < len(texto):
+        c = texto[j]
+        if q:
+            if c == "\\":
+                j += 1
+            elif c == q:
+                q = None
+        elif c in "'\"`":
+            q = c
+        elif c == "{":
+            prof += 1
+        elif c == "}":
+            prof -= 1
+            if prof == 0:
+                return texto[m.start():j + 1]
+        j += 1
+    return texto[m.start():]
 
 
 def innerhtml_inseguros(texto: str) -> list[str]:
@@ -294,6 +322,21 @@ def main() -> int:
             f"{len(rotas_fn)} rotas" if rotas_fn else "todas resuelven")
     for r in rotas_fn[:8]:
         print(f"        · {r}")
+
+    # ── menú Admin con control en el servidor ───────────────────────────────
+    # Ocultar el submenú no basta: cualquier función global se puede invocar con
+    # google.script.run desde un panel abierto. Cada manejador del submenú Admin
+    # debe llamar assertAdmin() él mismo.
+    todo_gs = "\n".join(f.read_text(encoding="utf-8") for f in gs)
+    manejadores = sorted({fn for f in gs for fn in MENU_ADMIN.findall(f.read_text(encoding="utf-8"))})
+    sin_control = [fn for fn in manejadores
+                   if "assertAdmin(" not in (cuerpo_funcion(todo_gs, fn) or "")]
+    revisar("Menú Admin comprueba admin en el servidor", bool(manejadores) and not sin_control,
+            "no se encontró adminMenu.addItem" if not manejadores else
+            (f"{len(sin_control)} de {len(manejadores)} sin assertAdmin()" if sin_control
+             else f"{len(manejadores)} / {len(manejadores)} con assertAdmin()"))
+    for fn in sin_control[:20]:
+        print(f"        · {fn}()")
 
     # ── innerHTML con datos sin escapar ─────────────────────────────────────
     # Los nombres de tareas, proyectos y personas los escribe el equipo. Pegarlos

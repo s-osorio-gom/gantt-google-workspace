@@ -22,6 +22,7 @@ var GTM_CAL_HORIZON_FWD_DAYS = 240;     // hasta ~8 meses adelante
  * Punto de entrada desde el menú (confirmación + resumen).
  */
 function enviarCalendarioDesdeMenu() {
+  assertAdmin('enviar tareas a los calendarios');
   const ui = SpreadsheetApp.getUi();
   const sandbox = isSandboxMode();
   const aviso = sandbox

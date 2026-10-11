@@ -479,6 +479,7 @@ function sendWelcomeToAll() {
  * Atajo desde menu: envía bienvenida a todos con confirmación y reporte.
  */
 function sendWelcomeToAllFromMenu() {
+  assertAdmin('enviar la bienvenida a todo el equipo');
   const ui = SpreadsheetApp.getUi();
   const personas = getActivePersons();
   const mode = isSandboxMode() ? 'SANDBOX (correos van al admin)' : 'PROD (correos van a destinatarios REALES)';
@@ -635,6 +636,7 @@ function sendThursdayReminders(todayDate) {
  *  Atajos desde menú UI
  * ============================================================================ */
 function sendTestIndividualToAdmin() {
+  assertAdmin('enviar el correo de prueba');
   // Envía el recordatorio del jueves de una persona de muestra, redirigido al admin.
   const admin = getConfig('ADMIN_EMAIL');
   const sample = getActivePersons().find(p => toBool(p.recibe_recordatorio_domingo) && getProjectsForOwner(p.person_id).length > 0)

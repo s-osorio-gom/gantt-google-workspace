@@ -82,6 +82,7 @@ function goToResumen() {
 
 /** Envía el recordatorio del jueves ahora (admin, respeta SANDBOX). */
 function sendThursdayNowFromMenu() {
+  assertAdmin('enviar el recordatorio');
   const r = sendThursdayReminders();
   SpreadsheetApp.getUi().alert('Recordatorio del jueves enviado',
     'Enviados: ' + r.sent + ' de ' + r.total + (isSandboxMode() ? '\n\n(SANDBOX: los correos van al admin)' : ''),
@@ -90,6 +91,7 @@ function sendThursdayNowFromMenu() {
 
 /** Envía los ejecutivos del viernes ahora (admin, respeta SANDBOX). */
 function sendExecNowFromMenu() {
+  assertAdmin('enviar los ejecutivos');
   try { generateSnapshot(); } catch (e) {}
   const r = sendExecutiveReports();
   SpreadsheetApp.getUi().alert('Ejecutivos enviados',
@@ -99,6 +101,7 @@ function sendExecNowFromMenu() {
 
 /** Setup 1 vez: config de acceso + columnas PERT + pestañas privadas + reconstruir vistas. */
 function setupMejoras2026FromMenu() {
+  assertAdmin('completar la configuración');
   const res = setupMejoras2026();
   SpreadsheetApp.getUi().alert('Configuración completada',
     'Config acceso: ' + (res.accessAdded.join(', ') || '(ya estaban)') +
@@ -226,13 +229,20 @@ function openRecurrentesSidebar() { _sidebar('sidebar_recurrentes', '🔁 Tareas
 
 /** Genera las instancias recurrentes del período (botón admin). */
 function generateRecurringFromMenu() {
+  assertAdmin('generar las recurrentes del período');
   const r = generateRecurringTasks();
   SpreadsheetApp.getUi().alert('Tareas recurrentes',
     'Instancias nuevas generadas: ' + r.created + '\nPlantillas activas: ' + r.plantillas,
     SpreadsheetApp.getUi().ButtonSet.OK);
 }
-function openAddPersonSidebar() { _sidebar('sidebar_add_person', '➕ Agregar persona', 360); }
-function openAddProjectSidebar() { _sidebar('sidebar_add_project', '➕ Agregar proyecto', 360); }
+function openAddPersonSidebar() {
+  assertAdmin('agregar personas');
+  _sidebar('sidebar_add_person', '➕ Agregar persona', 360);
+}
+function openAddProjectSidebar() {
+  assertAdmin('crear proyectos desde el menú Admin');
+  _sidebar('sidebar_add_project', '➕ Agregar proyecto', 360);
+}
 function openEditProjectSidebar() { _sidebar('sidebar_edit_project', '✏️ Editar proyecto', 380); }
 function openArchiveProjectSidebar() { _sidebar('sidebar_archive_project', '🗑️ Archivar proyecto', 360); }
 function openAddTaskSidebar() { _sidebar('sidebar_add_task', '➕ Agregar tarea', 380); }
@@ -251,6 +261,7 @@ function openRelevanteSidebar() { _sidebar('sidebar_relevante', '📝 Crear rele
  *  DIÁLOGO — Inactivar persona
  * ============================================================================ */
 function openInactivatePersonDialog() {
+  assertAdmin('inactivar personas');
   const personas = getActivePersons();
   if (personas.length === 0) {
     SpreadsheetApp.getUi().alert('No hay personas activas.');
@@ -317,6 +328,7 @@ function setConfigValue(key, value) {
  *  ESTADO DEL SISTEMA
  * ============================================================================ */
 function showSystemStatus() {
+  assertAdmin('ver el estado del sistema');
   const mode = getConfig('SYSTEM_MODE') || 'SANDBOX';
   const log = readSheetAsObjects(SHEET_NAMES.EMAIL_LOG).rows;
   const lastSent = log.filter(r => r.status === 'OK').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];

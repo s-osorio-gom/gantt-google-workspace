@@ -264,6 +264,7 @@ function _diag_pruebaEvalPersonal() {
 
 /** Atajo admin desde menú para enviar las evaluaciones ya calificadas (además del día 4 automático). */
 function enviarEvaluacionesDesdeMenu() {
+  assertAdmin('enviar las evaluaciones');
   const r = sendPersonalEvalsDay4();
   SpreadsheetApp.getUi().alert('Evaluaciones enviadas',
     'Enviadas: ' + r.sent + ' de ' + r.candidatas + ' calificadas' +

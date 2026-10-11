@@ -212,6 +212,7 @@ function onSheetEdit(e) {
  * Atajo desde menú para reinstalar triggers.
  */
 function reinstallTriggersFromMenu() {
+  assertAdmin('instalar los disparadores');
   const ui = SpreadsheetApp.getUi();
   const r = ui.alert('Reinstalar triggers', 'Esto borrará y volverá a crear los triggers automáticos. ¿Confirmas?', ui.ButtonSet.YES_NO);
   if (r !== ui.Button.YES) return;

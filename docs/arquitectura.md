@@ -78,11 +78,18 @@ el lugar para cambiarla es `sendExecutiveReports()` (`08_Reports.gs`) y
 - `SUPERVISOR_EMAILS`: edición cualquier día, sin menú Admin.
 - El resto: solo edita el día `EDIT_LOCK_DAY` (jueves por defecto).
 
-Las acciones de administración (`addPerson`, `inactivatePerson`, cambio de modo,
-reorganizar, bienvenida masiva, instalar disparadores, completar
-configuración) comprueban en el servidor que quien ejecuta sea admin: el menú
-oculto no basta, porque cualquier función global se puede invocar con
-`google.script.run` desde un panel abierto.
+Cada entrada del submenú Admin llama `assertAdmin()` en el servidor, además de
+`addPerson` e `inactivatePerson`: el menú oculto no basta, porque cualquier
+función global se puede invocar con `google.script.run` desde un panel
+abierto. El verificador lo exige (chequeo «Menú Admin comprueba admin en el
+servidor»).
+
+No es una frontera de seguridad: quien puede editar el Sheet puede abrir
+`Extensiones → Apps Script` y cambiar el código, o editar `00_Config`. Evita
+usos accidentales y desde la consola de un panel. Las funciones internas que
+corren desde los disparadores (envíos del jueves, viernes, día 1 y día 4) no
+lo comprueban: si `ADMIN_EMAIL` cambiara después de instalar los disparadores,
+dejarían de correr.
 
 Si Apps Script no revela el correo de quien ejecuta (cuentas de otro dominio),
 solo se trata como contexto de confianza cuando el script corre como un admin:
