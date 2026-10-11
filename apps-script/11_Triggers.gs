@@ -133,7 +133,11 @@ function weeklySnapshotPre() {
 function dailyDispatcherMorning() {
   return withErrorAlert(() => {
     const d = today();
-    const esDia = (clave, defecto) => _esDiaConfigurado(d, getConfigInt(clave, defecto));
+    // Un día fuera de 1–31 (0, negativo, 32, texto) no es un día del mes: se usa el defecto.
+    const esDia = (clave, defecto) => {
+      const v = getConfigInt(clave, defecto);
+      return _esDiaConfigurado(d, (v >= 1 && v <= 31) ? v : defecto);
+    };
     // Día 1 del mes → archivar completados del mes anterior + eval mensual
     if (esDia('MONTHLY_EVAL_DAY', 1)) {
       try { monthlyRollover(); } catch (e) { logWarn('monthlyRollover: ' + e.message); }
@@ -153,8 +157,9 @@ function dailyDispatcherMorning() {
 
 /**
  * ¿Es `fecha` el día `dia` de su mes? Un día mayor que los del mes (29–31 en
- * febrero, 31 en abril…) cae el último día; uno menor que 1 cae el día 1. Antes
- * MONTHLY_EVAL_DAY=31 no disparaba nunca en los meses cortos.
+ * febrero, 31 en abril…) cae el último día. Antes MONTHLY_EVAL_DAY=31 no
+ * disparaba nunca en los meses cortos. (El dispatcher ya descarta valores fuera
+ * de 1–31 y usa el defecto; aquí, por robustez, < 1 cae el día 1.)
  */
 function _esDiaConfigurado(fecha, dia) {
   const ultimo = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();

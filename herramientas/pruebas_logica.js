@@ -378,9 +378,12 @@ prueba('Día 31 configurado cae el último día de los meses cortos (28-feb, 29-
         ['2027-02-28', '2027-03-31', '2027-04-30']);
   igual(despachos({ MONTHLY_EVAL_DAY: 31 }, '2028-02-01', '2028-02-29').eval, ['2028-02-29']);
 });
-prueba('Día configurado 0 o negativo se trata como 1; texto inválido usa el defecto', () => {
-  igual(despachos({ PERSONAL_EVAL_SEND_DAY: 0, RECURRING_TASKS_DAY: 'abc' }, '2027-03-01', '2027-03-31'),
-        { eval: ['2027-03-01'], rec: ['2027-03-01'], dia4: ['2027-03-01'] });
+// C6: un día inválido (0, negativo, > 31, texto) usa el valor por defecto. La
+// versión anterior de esta prueba exigía que 0 cayera el día 1, contra C6.
+prueba('Día configurado inválido (0, negativo, > 31, texto) usa el valor por defecto', () => {
+  igual(despachos({ PERSONAL_EVAL_SEND_DAY: 0, RECURRING_TASKS_DAY: 'abc', MONTHLY_EVAL_DAY: -3 }, '2027-03-01', '2027-03-31'),
+        { eval: ['2027-03-01'], rec: ['2027-03-01'], dia4: ['2027-03-04'] });
+  igual(despachos({ PERSONAL_EVAL_SEND_DAY: 32 }, '2027-03-01', '2027-03-31').dia4, ['2027-03-04']);
 });
 
 // ── menú Admin: control en el servidor ─────────────────────────────────────
