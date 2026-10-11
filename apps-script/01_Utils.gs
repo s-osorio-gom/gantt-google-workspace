@@ -248,6 +248,18 @@ function logEvent(eventType, period, destinatarioEmail, destinatarioNombre, asun
 }
 
 /**
+ * Huella corta de un texto (djb2, base 36). Se usa en el periodo del log de
+ * correos: mismo contenido → mismo periodo → el anti-duplicado lo detiene; un
+ * contenido corregido cambia la huella y sí sale.
+ */
+function _huella(texto) {
+  let h = 5381;
+  const s = String(texto);
+  for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+/**
  * Lock simple para evitar ejecuciones concurrentes.
  *
  * Reentrante: muchas operaciones con lock llaman a otras que también lo toman

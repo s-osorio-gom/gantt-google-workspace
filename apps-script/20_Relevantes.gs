@@ -112,15 +112,21 @@ function enviarRelevantesComentados() {
     };
     const html = renderTemplate('email_relevantes', ctx);
     const res = sendEmailGTM({
-      eventType: 'relevantes_feedback', period: getWeekId(today()) + '-' + pid,
+      // Huella del lote (filas y comentarios): si el correo sale pero falla la marca
+      // de las filas, el reintento lo detiene el log; un lote nuevo sí sale.
+      eventType: 'relevantes_feedback',
+      period: getWeekId(today()) + '-' + pid + '#' + _huella(byPerson[pid].map(r =>
+        [r._rowIndex, r.timestamp, r.relevante, r.comentario_lider].join('|')).join('§')),
       realToEmail: person.email, realToName: person.nombre,
-      subject: 'Comentarios a tus relevantes de la semana', htmlBody: html, allowDuplicate: !sandbox
+      subject: 'Comentarios a tus relevantes de la semana', htmlBody: html
     });
     if (res.ok) {
-      byPerson[pid].forEach(r => {
-        rel.getRange(r._rowIndex, colMap['enviado']).setValue(sandbox ? 'SANDBOX' : 'TRUE');
-        rel.getRange(r._rowIndex, colMap['fecha_comentario']).setValue(fmtDateHuman(today()));
-      });
+      try {
+        byPerson[pid].forEach(r => {
+          rel.getRange(r._rowIndex, colMap['enviado']).setValue(sandbox ? 'SANDBOX' : 'TRUE');
+          rel.getRange(r._rowIndex, colMap['fecha_comentario']).setValue(fmtDateHuman(today()));
+        });
+      } catch (e) { logError('relevantes: no se pudo marcar enviado de ' + pid + ': ' + e.message); }
       sent++;
     }
   });

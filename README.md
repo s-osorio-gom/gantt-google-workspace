@@ -92,7 +92,8 @@ alguien siempre lo hace— el sistema sigue funcionando.
 
 **Idempotencia.** Cada envío queda en `08_Email_Log` con
 `(tipo, periodo, destinatario, modo)`; si un disparador se reintenta, quien ya
-recibió no recibe dos veces. La foto semanal tampoco se duplica.
+recibió no recibe dos veces (la bienvenida y las muestras de prueba sí se
+pueden reenviar a propósito). La foto semanal tampoco se duplica.
 
 **Modo SANDBOX.** Mientras `SYSTEM_MODE=SANDBOX`, todos los correos (y las
 invitaciones de calendario) van al administrador. Se prueba el sistema completo

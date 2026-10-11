@@ -257,7 +257,7 @@ function evalDia4(modo) {
 }
 prueba('Evaluación enviada en SANDBOX no queda ENVIADO (si no, en PROD nunca llega)', () => {
   const { r, marcas, envios } = evalDia4('SANDBOX');
-  igual([r.sent, marcas, envios[0].allowDuplicate], [1, [], false]);
+  igual([r.sent, marcas, !!envios[0].allowDuplicate], [1, [], false]);
 });
 prueba('Evaluación enviada en PROD sí queda ENVIADO', () => {
   const { r, marcas } = evalDia4('PROD');
@@ -603,6 +603,47 @@ prueba('Recordatorio: si el disparador corre un día que no es EDIT_LOCK_DAY, no
 prueba('Recordatorio con día de edición viernes o sábado no promete el reporte de «este» viernes 8:30', () => {
   const r5 = recordatorio({ EDIT_LOCK_DAY: 5 }).html, r4 = recordatorio({}).html;
   igual([/semana siguiente/.test(r5), /semana siguiente/.test(r4), /viernes 8:30/.test(r4)], [true, false, true]);
+});
+
+// ── PROD: un fallo entre el envío y la marca de la fila no reenvía ─────────
+// sendEmailGTM real; el log persiste entre «ejecuciones» y la marca de la fila falla.
+function conLogPersistente(fn) {
+  const log = [], correos = [];
+  const dobles = {
+    readSheetAsObjects: () => ({ rows: log.slice() }),
+    logEvent: (tipo, periodo, email, nombre, asunto, status, modo) =>
+      log.push({ event_type: tipo, period: periodo, destinatario_email: email, status: status, mode: modo }),
+    MailApp: { sendEmail: (to) => correos.push(to) }, renderTemplate: () => ''
+  };
+  const ejecucion = (extra) => { G('_cacheEmailLog = null'); con(Object.assign({}, dobles, extra), fn); G('_cacheEmailLog = null'); };
+  return { ejecucion, correos };
+}
+const DIA4 = (fila) => ({ today: () => fecha('2026-11-04'), getActivePersons: () => G('__datos.personas'),
+  readEvalSheetAsObjects: () => ({ rows: [fila] }),
+  setEvalCell: () => { throw new Error('la hoja privada no respondió'); } });
+prueba('Evaluación en PROD: si falla la marca ENVIADO, el reintento no la reenvía; una corrección sí sale', () => {
+  estado.config = { SYSTEM_MODE: 'PROD', ADMIN_EMAIL: 'admin@example.com' };
+  G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
+  const fila = { _rowIndex: 2, year: 2026, month: 10, person_id: 'P002', calificacion_1_5: 4,
+                 comentario_jefe: 'Buen mes', estado: 'LISTO', fecha_evaluacion: 'x' };
+  const fn = ctx.sendPersonalEvalsDay4_ ? 'sendPersonalEvalsDay4_' : 'sendPersonalEvalsDay4';
+  const t = conLogPersistente(() => G(fn)());
+  t.ejecucion(DIA4(fila)); t.ejecucion(DIA4(fila));
+  igual(t.correos.length, 1);
+  t.ejecucion(DIA4(Object.assign({}, fila, { comentario_jefe: 'Buen mes (corregido)' })));
+  igual(t.correos.length, 2);
+});
+prueba('Relevantes en PROD: si falla la marca enviado, el reintento no los reenvía', () => {
+  estado.config = { SYSTEM_MODE: 'PROD', ADMIN_EMAIL: 'admin@example.com' };
+  G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
+  const hoja = { getRange: () => ({ setValue: () => { throw new Error('la hoja privada no respondió'); } }) };
+  const extra = { today: () => fecha('2026-11-07'), getConfidSS: () => ({ getSheetByName: () => hoja }),
+    readSheetObjectsFrom: () => [{ _rowIndex: 5, person_id: 'P002', tipo: 'Otro', relevante: 'r',
+      comentario_lider: 'ok', enviado: '', semana: '2026-W45', timestamp: 'x' }] };
+  const fn = ctx.enviarRelevantesComentados_ ? 'enviarRelevantesComentados_' : 'enviarRelevantesComentados';
+  const t = conLogPersistente(() => { try { G(fn)(); } catch (_) {} });
+  t.ejecucion(extra); t.ejecucion(extra);
+  igual(t.correos.length, 1);
 });
 
 console.log('\n  ' + '─'.repeat(56));

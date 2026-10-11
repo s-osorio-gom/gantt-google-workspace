@@ -320,13 +320,14 @@ function sendPersonalEvaluationEmail(fila) {
   const html = renderTemplate('email_eval_personal', ctx);
   return sendEmailGTM({
     eventType: 'personal_eval',
-    period: fila.year + '-' + String(fila.month).padStart(2, '0'),
+    // Mes + huella de calificación y comentario: si el correo sale pero falla la marca
+    // ENVIADO, el reintento lo detiene el log; si el jefe corrige la evaluación, la
+    // huella cambia y la corrección sí sale. (Antes, allowDuplicate:true en PROD.)
+    period: fila.year + '-' + String(fila.month).padStart(2, '0') + '#' +
+            _huella(fila.calificacion_1_5 + '|' + String(fila.comentario_jefe || '').trim()),
     realToEmail: person.email,
     realToName: person.nombre,
     subject: 'Tu evaluación de ' + monthName + ' ' + fila.year,
-    htmlBody: html,
-    // En PROD manda el estado de la fila (permite reenviar si el admin lo devuelve a LISTO);
-    // en SANDBOX la fila no se marca, así que el anti-duplicado del log evita repetir.
-    allowDuplicate: !isSandboxMode()
+    htmlBody: html
   });
 }
