@@ -85,18 +85,18 @@ function syncRelevantesToConfid() {
 function enviarRelevantesComentados_() {
   let confid;
   try { confid = getConfidSS(); } catch (e) { return { sent: 0, error: e.message }; }
+  const sandbox = isSandboxMode();
   const rows = readSheetObjectsFrom(confid, 'Relevantes')
-    .filter(r => String(r.comentario_lider || '').trim() !== '' && _relevantePendiente(r.enviado));
+    .filter(r => String(r.comentario_lider || '').trim() !== '' && _relevantePendiente(r.enviado, sandbox));
   if (!rows.length) return { sent: 0 };
   // agrupar por persona
   const byPerson = {};
   rows.forEach(r => { (byPerson[r.person_id] = byPerson[r.person_id] || []).push(r); });
   const rel = confid.getSheetByName('Relevantes');
   const colMap = {}; REL_HEADERS.forEach((h, i) => colMap[h] = i + 1);
-  // En SANDBOX el correo va al admin y la fila queda enviado='SANDBOX': no se le
-  // reenvía al admin cada sábado ni le llega a la persona al pasar a PROD (lo
-  // comentado durante las pruebas no es para ella). PROD marca TRUE.
-  const sandbox = isSandboxMode();
+  // En SANDBOX el correo va al admin y la fila queda enviado='SANDBOX' (no se le
+  // reenvía al admin cada sábado). Esa marca no impide PROD: el comentario del
+  // jefe le llega a la persona en el primer envío real. PROD marca TRUE.
   let sent = 0;
   Object.keys(byPerson).forEach(pid => {
     const person = getPersonById(pid);
@@ -134,10 +134,14 @@ function enviarRelevantesComentados_() {
   return { sent: sent };
 }
 
-/** Pendiente de envío: `enviado` vacío o FALSE. TRUE (PROD) y SANDBOX ya se trataron. */
-function _relevantePendiente(enviado) {
+/**
+ * ¿Falta enviar este relevante? En SANDBOX: si `enviado` está vacío o FALSE (ya
+ * marcado SANDBOX no se repite). En PROD: si no es TRUE, incluido SANDBOX — lo
+ * enviado al admin durante las pruebas no consume el envío real (criterio C7).
+ */
+function _relevantePendiente(enviado, sandbox) {
   const m = String(enviado === null || enviado === undefined ? '' : enviado).trim().toUpperCase();
-  return m === '' || m === 'FALSE';
+  return sandbox ? (m === '' || m === 'FALSE') : m !== 'TRUE';
 }
 
 /**
@@ -169,6 +173,6 @@ function enviarRelevantesDesdeMenu() {
   const r = enviarRelevantesComentados_();
   SpreadsheetApp.getUi().alert('Relevantes comentados',
     'Enviados a ' + (r.sent || 0) + ' persona(s)' + (r.error ? ('\n\n' + r.error) : '') +
-    (isSandboxMode() ? '\n\n(SANDBOX: van al admin y quedan marcados enviado=SANDBOX; no se reenvían en PROD)' : ''),
+    (isSandboxMode() ? '\n\n(SANDBOX: van al admin y quedan marcados enviado=SANDBOX; en PROD le llegan a cada persona)' : ''),
     SpreadsheetApp.getUi().ButtonSet.OK);
 }

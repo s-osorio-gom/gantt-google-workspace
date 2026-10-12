@@ -263,10 +263,9 @@ prueba('Evaluación enviada en PROD sí queda ENVIADO', () => {
   const { r, marcas } = evalDia4('PROD');
   igual([r.sent, marcas], [1, ['estado=ENVIADO']]);
 });
-// Relevantes: en SANDBOX se marcan aparte (enviado='SANDBOX'). Así no se le
-// reenvían al admin todos los acumulados cada sábado, y al pasar a PROD nadie
-// recibe de golpe lo comentado durante las pruebas. (En H1 la prueba exigía no
-// marcar nada en SANDBOX: eso producía justamente esa acumulación.)
+// Relevantes: en SANDBOX se marcan aparte (enviado='SANDBOX') para no
+// reenviárselos al admin cada sábado; esa marca NO impide el envío real en PROD
+// (exigencia de H1, criterio C7: lo enviado en SANDBOX no consume PROD).
 function relevantesSabado(modo, enviado) {
   estado.config = { SYSTEM_MODE: modo, ADMIN_EMAIL: 'admin@example.com' };
   G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
@@ -287,11 +286,13 @@ prueba('Relevantes en SANDBOX: se envían una vez y quedan marcados SANDBOX, no 
   igual([r.envios.length, r.marcas.indexOf('SANDBOX') >= 0, r.marcas.indexOf('TRUE') >= 0], [1, true, false]);
   igual(relevantesSabado('SANDBOX', 'SANDBOX').envios.length, 0);   // el sábado siguiente no se repiten
 });
-prueba('Relevantes en PROD: solo los pendientes; nunca los ya enviados en SANDBOX', () => {
+prueba('Relevantes: lo enviado en SANDBOX no impide PROD; PROD no repite lo ya enviado', () => {
   const r = relevantesSabado('PROD');
   igual([r.envios.length, r.marcas.indexOf('TRUE') >= 0], [1, true]);
-  igual(relevantesSabado('PROD', 'SANDBOX').envios.length, 0);
+  igual(relevantesSabado('PROD', 'SANDBOX').envios.length, 1);   // C7: le llega a la persona
   igual(relevantesSabado('PROD', '').envios.length, 1);
+  igual(relevantesSabado('PROD', 'TRUE').envios.length, 0);
+  igual(relevantesSabado('PROD', true).envios.length, 0);        // casilla marcada
 });
 
 // ── instalación: el contenedor de recurrentes siempre tiene responsable ────

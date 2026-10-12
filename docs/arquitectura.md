@@ -151,7 +151,8 @@ Lo que se envía en `SANDBOX` no consume el envío real de las evaluaciones: no
 pasan a `ENVIADO` mientras el modo sea `SANDBOX` (el correo fue al admin, no a
 la persona), y al pasar a `PROD` el siguiente envío las entrega. Los relevantes
 enviados en `SANDBOX` quedan `enviado=SANDBOX`: no se le reenvían al admin cada
-sábado y tampoco salen en `PROD` (son de la etapa de pruebas).
+sábado, y en `PROD` sí le llegan a la persona (solo `enviado=TRUE` cuenta como
+entregado).
 
 ## Concurrencia
 
