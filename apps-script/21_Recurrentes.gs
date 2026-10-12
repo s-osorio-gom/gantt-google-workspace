@@ -92,7 +92,7 @@ function _ensureRecurringContainer() {
   const actual = (pid && getProjectById(pid)) ||
     getAllProjects().find(p => String(p.nombre || '').indexOf('Recurrentes') >= 0);
   if (actual) {
-    if (String(actual.project_id) !== pid) setConfigValue('RECURRING_PROJECT_ID', actual.project_id);
+    if (String(actual.project_id) !== pid) setConfigValue_('RECURRING_PROJECT_ID', actual.project_id);
     // Un contenedor sin responsable es un error CRÍTICO en 99_Validaciones (bloquea el
     // viernes y el paso a PROD). Pasaba al correr «Completar configuración» antes de
     // cargar personas; se repara en cuanto haya alguien.
@@ -116,7 +116,7 @@ function _ensureRecurringContainer() {
     link_drive: '', peso: 1, estado_manual: ''
   });
   _invalidateEntityCache(SHEET_NAMES.PROYECTOS);
-  setConfigValue('RECURRING_PROJECT_ID', pid);
+  setConfigValue_('RECURRING_PROJECT_ID', pid);
   return pid;
 }
 
@@ -133,7 +133,7 @@ function setupRecurrentes() {
   const rec = ensureRecColumn();
   const container = _ensureRecurringContainer();
   if (getConfig('RECURRING_TASKS_DAY') === undefined || String(getConfig('RECURRING_TASKS_DAY')).trim() === '') {
-    setConfigValue('RECURRING_TASKS_DAY', '1');
+    setConfigValue_('RECURRING_TASKS_DAY', '1');
   }
   return { container_project_id: container, rec_source_col: rec.added, tab: REC_TAB };
 }
@@ -434,6 +434,7 @@ function generateRecurringNow() { return generateRecurringTasks(); }
 
 /** Diagnóstico: fechas de repetición de una plantilla como texto (para clasp run / QA). */
 function _diag_recDates(recId) {
+  assertAdmin('usar la función de diagnóstico _diag_recDates');
   const occ = recurrenceOccurrencesFor(recId);
   return { n: occ.length, fechas: occ.map(d => fmtDateISO(d) + ' (' + _DIAS_SEM[d.getDay()] + ')').join(' · ') };
 }

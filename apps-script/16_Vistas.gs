@@ -10,6 +10,7 @@
 
 /** Diagnóstico: métricas serializables de un proyecto (para QA con clasp run). */
 function _diag_projectMetrics(projectId) {
+  assertAdmin('usar la función de diagnóstico _diag_projectMetrics');
   const m = computeProjectMetrics(projectId);
   if (!m) return { found: false, project_id: projectId };
   return {
@@ -27,6 +28,7 @@ function _diag_projectMetrics(projectId) {
 
 /** Diagnóstico: últimos correos registrados (event_type | status | mode). */
 function _diag_lastEmails() {
+  assertAdmin('usar la función de diagnóstico _diag_lastEmails');
   const rows = readSheetAsObjects(SHEET_NAMES.EMAIL_LOG).rows;
   return rows.slice(-9).map(r => (r.event_type || r.asunto || '?') + ' | ' + (r.status || '') + ' | ' + (r.mode || ''));
 }
@@ -37,6 +39,7 @@ function _diag_lastEmails() {
  * (Datos de prueba — sobreescribe fechas. Cada quien las ajusta luego en el editor.)
  */
 function _demoFechas() {
+  assertAdmin('usar la función de diagnóstico _demoFechas');
   return withLock(() => {
     const projects = getAllProjects().filter(p => (p.estado_manual || '') !== 'Archivado');
     const t0 = today();
@@ -88,6 +91,7 @@ function _demoFechas() {
  * Es data de prueba — el equipo la ajusta luego en el editor.
  */
 function _demoFechasJulDic() {
+  assertAdmin('usar la función de diagnóstico _demoFechasJulDic');
   return withLock(() => {
     const projects = getAllProjects().filter(p => (p.estado_manual || '') !== 'Archivado');
     const w = ganttWindow();
@@ -117,6 +121,7 @@ function _demoFechasJulDic() {
 
 /** Diagnóstico: ¿la hoja (vista) contiene este texto? Para verificar auto-refresco. */
 function _diag_viewContains(sheetName, text) {
+  assertAdmin('usar la función de diagnóstico _diag_viewContains');
   const sh = getSS().getSheetByName(sheetName);
   if (!sh) return false;
   const vals = sh.getDataRange().getValues();
@@ -126,6 +131,7 @@ function _diag_viewContains(sheetName, text) {
 
 /** Diagnóstico: pestañas visibles (para verificar la consolidación). */
 function _diag_pestanas() {
+  assertAdmin('usar la función de diagnóstico _diag_pestanas');
   return getSS().getSheets().filter(s => !s.isSheetHidden()).map(s => s.getName());
 }
 

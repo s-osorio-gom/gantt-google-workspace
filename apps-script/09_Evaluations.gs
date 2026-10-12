@@ -122,15 +122,16 @@ function computePersonMonthlyMetrics(personId, fromDate, toDate) {
  * Trigger del día 1 del mes: pobla evaluaciones + envía correo al jefe del canal.
  */
 function monthlyEvalJob() {
+  _assertDisparador('monthlyEvalJob');
   return withErrorAlert(() => {
     const d = today();
     const evalMonth = new Date(d.getFullYear(), d.getMonth() - 1, 1);
     ensureMonthlyEvalRows(evalMonth);
-    sendMonthlyEvalEmailToBoss(evalMonth);
+    sendMonthlyEvalEmailToBoss_(evalMonth);
   }, 'monthlyEvalJob');
 }
 
-function sendMonthlyEvalEmailToBoss(monthDate) {
+function sendMonthlyEvalEmailToBoss_(monthDate) {
   const year = monthDate.getFullYear();
   const month = monthDate.getMonth() + 1;
   const monthName = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][month - 1];
@@ -164,7 +165,7 @@ function sendMonthlyEvalEmailToBoss(monthDate) {
     support_email: getConfig('SUPPORT_EMAIL') || 'admin@example.com'
   };
   const html = renderTemplate('email_eval_jefe', ctx);
-  return sendEmailGTM({
+  return sendEmailGTM_({
     eventType: 'monthly_eval',
     period: year + '-' + String(month).padStart(2, '0'),
     realToEmail: jefe.email,
@@ -176,7 +177,7 @@ function sendMonthlyEvalEmailToBoss(monthDate) {
 
 /**
  * onEdit del Sheet PRIVADO: cuando el jefe del canal completa calificación + comentario, marca la fila
- * como LISTO (pero NO envía). El envío a cada persona se hace en lote el DÍA 4 (sendPersonalEvalsDay4).
+ * como LISTO (pero NO envía). El envío a cada persona se hace en lote el DÍA 4 (sendPersonalEvalsDay4_).
  */
 function onEvalSheetEdit(e) {
   if (!e || !e.range) return;
@@ -203,7 +204,7 @@ function onEvalSheetEdit(e) {
  * DÍA 4 del mes: envía a cada persona su evaluación (solo las que el jefe del canal ya calificó + comentó).
  * Las que no tengan calificación/comentario no se envían.
  */
-function sendPersonalEvalsDay4() {
+function sendPersonalEvalsDay4_() {
   const d = today();
   const evalMonth = new Date(d.getFullYear(), d.getMonth() - 1, 1);
   const year = evalMonth.getFullYear(), month = evalMonth.getMonth() + 1;
@@ -217,7 +218,7 @@ function sendPersonalEvalsDay4() {
   let sent = 0;
   rows.forEach(fila => {
     try {
-      const res = sendPersonalEvaluationEmail(fila);
+      const res = sendPersonalEvaluationEmail_(fila);
       if (res && res.ok) {
         if (!sandbox) {
           setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'estado', 'ENVIADO');
@@ -233,6 +234,7 @@ function sendPersonalEvalsDay4() {
 
 /** MUESTRA: envía a admin el correo de evaluación del jefe del canal (KPIs de todos) del mes anterior. */
 function _diag_evalSampleJefe() {
+  assertAdmin('usar la función de diagnóstico _diag_evalSampleJefe');
   const d = today();
   const evalMonth = new Date(d.getFullYear(), d.getMonth() - 1, 1);
   ensureMonthlyEvalRows(evalMonth);
@@ -245,13 +247,14 @@ function _diag_evalSampleJefe() {
   const ctx = { nombre_corto: 'Jefe', month_label: monthName + ' ' + year, today_display: fmtDateHuman(today()),
     personas: personasEval, link_eval_sheet: getConfig('EVAL_SHEET_URL') || '#',
     support_email: getConfig('SUPPORT_EMAIL') || 'admin@example.com' };
-  return sendEmailGTM({ eventType: 'sample_eval_jefe', period: 'sample-' + Date.now(),
+  return sendEmailGTM_({ eventType: 'sample_eval_jefe', period: 'sample-' + Date.now(),
     realToEmail: getConfig('ADMIN_EMAIL'), realToName: 'Admin', subject: '[MUESTRA] Evaluación mensual — jefe del canal',
     htmlBody: renderTemplate('email_eval_jefe', ctx), allowDuplicate: true });
 }
 
 /** MUESTRA/PRUEBA: califica la 1ra fila del mes anterior y dispara el envío del día 4 (a admin en SANDBOX). */
 function _diag_pruebaEvalPersonal() {
+  assertAdmin('usar la función de diagnóstico _diag_pruebaEvalPersonal');
   const d = today();
   const evalMonth = new Date(d.getFullYear(), d.getMonth() - 1, 1);
   ensureMonthlyEvalRows(evalMonth);
@@ -262,13 +265,13 @@ function _diag_pruebaEvalPersonal() {
   setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'calificacion_1_5', 4);
   setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'comentario_jefe', 'PRUEBA: buen mes, cerraste bien tus proyectos. Sigue así.');
   setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'estado', 'LISTO');
-  return sendPersonalEvalsDay4();
+  return sendPersonalEvalsDay4_();
 }
 
 /** Atajo admin desde menú para enviar las evaluaciones ya calificadas (además del día 4 automático). */
 function enviarEvaluacionesDesdeMenu() {
   assertAdmin('enviar las evaluaciones');
-  const r = sendPersonalEvalsDay4();
+  const r = sendPersonalEvalsDay4_();
   SpreadsheetApp.getUi().alert('Evaluaciones enviadas',
     'Enviadas: ' + r.sent + ' de ' + r.candidatas + ' calificadas' +
     (isSandboxMode() ? '\n\n(SANDBOX: van al admin y no se marcan como enviadas; en PROD saldrán a cada persona)' : ''),
@@ -287,7 +290,7 @@ function readEvalRowFromPrivate(rowIndex) {
 /**
  * Envía a la persona evaluada su correo confidencial.
  */
-function sendPersonalEvaluationEmail(fila) {
+function sendPersonalEvaluationEmail_(fila) {
   const person = getPersonById(fila.person_id);
   if (!person) throw new Error('Persona no encontrada: ' + fila.person_id);
   const evaluator = getPersonByEmail(fila.evaluador_email) ||
@@ -318,7 +321,7 @@ function sendPersonalEvaluationEmail(fila) {
     support_email: getConfig('SUPPORT_EMAIL') || 'admin@example.com'
   };
   const html = renderTemplate('email_eval_personal', ctx);
-  return sendEmailGTM({
+  return sendEmailGTM_({
     eventType: 'personal_eval',
     // Mes + huella de calificación y comentario: si el correo sale pero falla la marca
     // ENVIADO, el reintento lo detiene el log; si el jefe corrige la evaluación, la

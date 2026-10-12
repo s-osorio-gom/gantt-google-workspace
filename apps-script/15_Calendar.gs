@@ -36,7 +36,7 @@ function enviarCalendarioDesdeMenu() {
     ui.ButtonSet.YES_NO);
   if (r !== ui.Button.YES) return;
 
-  const res = withErrorAlert(() => sincronizarCalendario(), 'sincronizarCalendario');
+  const res = withErrorAlert(() => sincronizarCalendario_(), 'sincronizarCalendario_');
   ui.alert('✅ Calendarios actualizados',
     'Eventos creados: ' + res.creados + '\n' +
     'Eventos viejos borrados: ' + res.borrados + '\n' +
@@ -48,7 +48,7 @@ function enviarCalendarioDesdeMenu() {
 /**
  * Re-sincroniza el calendario. Devuelve un resumen.
  */
-function sincronizarCalendario() {
+function sincronizarCalendario_() {
   return withLock(() => {
     const cal = CalendarApp.getDefaultCalendar();
     const sandbox = isSandboxMode();

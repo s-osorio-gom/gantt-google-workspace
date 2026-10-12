@@ -39,7 +39,7 @@ const TRIGGER_HANDLERS = [
  */
 function installAllTriggers() {
   assertAdmin('instalar los disparadores');
-  uninstallAllTriggers();
+  uninstallAllTriggers_();
   let n = 0;
 
   // 1. Día de edición (EDIT_LOCK_DAY, jueves por defecto) 8:30 — recordatorio al equipo
@@ -101,7 +101,7 @@ function installAllTriggers() {
 /**
  * Desinstala todos los triggers manejados por el sistema.
  */
-function uninstallAllTriggers() {
+function uninstallAllTriggers_() {
   const triggers = ScriptApp.getProjectTriggers();
   let removed = 0;
   triggers.forEach(t => {
@@ -124,6 +124,7 @@ function uninstallAllTriggers() {
  * Snapshot pre-lunes (domingo 22:00). Solo genera snapshot, no envía.
  */
 function weeklySnapshotPre() {
+  _assertDisparador('weeklySnapshotPre');
   return withErrorAlert(() => generateSnapshot(), 'weeklySnapshotPre');
 }
 
@@ -131,6 +132,7 @@ function weeklySnapshotPre() {
  * Dispatcher diario (mañana 8:30): decide si es día 1 (eval mensual).
  */
 function dailyDispatcherMorning() {
+  _assertDisparador('dailyDispatcherMorning');
   return withErrorAlert(() => {
     const d = today();
     // Un día fuera de 1–31 (0, negativo, 32, texto) no es un día del mes: se usa el defecto.
@@ -140,7 +142,7 @@ function dailyDispatcherMorning() {
     };
     // Día 1 del mes → archivar completados del mes anterior + eval mensual
     if (esDia('MONTHLY_EVAL_DAY', 1)) {
-      try { monthlyRollover(); } catch (e) { logWarn('monthlyRollover: ' + e.message); }
+      try { monthlyRollover_(); } catch (e) { logWarn('monthlyRollover_: ' + e.message); }
       // monthlyEvalJob ya avisa al admin por correo si falla; que no corte lo que sigue.
       try { monthlyEvalJob(); } catch (e) { logWarn('monthlyEvalJob: ' + e.message); }
     }
@@ -150,7 +152,7 @@ function dailyDispatcherMorning() {
     }
     // Día 4: envía a cada persona su evaluación (solo las que el jefe del canal ya calificó).
     if (esDia('PERSONAL_EVAL_SEND_DAY', 4)) {
-      try { sendPersonalEvalsDay4(); } catch (e) { logWarn('sendPersonalEvalsDay4: ' + e.message); }
+      try { sendPersonalEvalsDay4_(); } catch (e) { logWarn('sendPersonalEvalsDay4_: ' + e.message); }
     }
   }, 'dailyDispatcherMorning');
 }
@@ -170,6 +172,7 @@ function _esDiaConfigurado(fecha, dia) {
  * Dispatcher diario (tarde 16:00): motivacional.
  */
 function dailyDispatcherAfternoon() {
+  _assertDisparador('dailyDispatcherAfternoon');
   return withErrorAlert(() => motivationalJob(), 'dailyDispatcherAfternoon');
 }
 
@@ -177,6 +180,7 @@ function dailyDispatcherAfternoon() {
  * Jueves 8:30 — recordatorio personalizado al equipo (plazo hoy 11:59 pm).
  */
 function thursdayReminderJob() {
+  _assertDisparador('thursdayReminderJob');
   return withErrorAlert(() => {
     // Si EDIT_LOCK_DAY cambió y no se reinstalaron los disparadores, este corre el
     // día viejo: no se manda «tienes plazo hoy» un día en que no se puede editar.
@@ -190,7 +194,7 @@ function thursdayReminderJob() {
       if (admin) { try { MailApp.sendEmail(admin, '[EQUIPO] Recordatorio en el día equivocado', msg); } catch (_) {} }
       return { sent: 0, skipped: true };
     }
-    return sendThursdayReminders();
+    return sendThursdayReminders_();
   }, 'thursdayReminderJob');
 }
 
@@ -199,19 +203,21 @@ function thursdayReminderJob() {
  * comentario no se envían).
  */
 function satRelevantesJob() {
-  return withErrorAlert(() => enviarRelevantesComentados(), 'satRelevantesJob');
+  _assertDisparador('satRelevantesJob');
+  return withErrorAlert(() => enviarRelevantesComentados_(), 'satRelevantesJob');
 }
 
 /**
  * Viernes 8:30 — snapshot del cierre + correos ejecutivos al jefe operativo y el jefe del canal.
  */
 function fridayExecJob() {
+  _assertDisparador('fridayExecJob');
   return withErrorAlert(() => withLock(() => {
     const valid = runValidations();
     if (valid.critical > 0) throw new Error('Bloqueado: ' + valid.critical + ' errores críticos. Ver 99_Validaciones.');
     try { generateSnapshot(); } catch (e) { logWarn('snapshot viernes: ' + e.message); }
-    const exec = sendExecutiveReports();
-    try { clearWeeklyComments(); } catch (e) { logWarn('clearWeeklyComments: ' + e.message); }
+    const exec = sendExecutiveReports_();
+    try { clearWeeklyComments_(); } catch (e) { logWarn('clearWeeklyComments_: ' + e.message); }
     logInfo('=== fridayExecJob OK ejecutivos=' + exec.sent + ' ===');
     return { ejecutivos: exec.sent };
   }), 'fridayExecJob');

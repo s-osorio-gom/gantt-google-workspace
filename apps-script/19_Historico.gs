@@ -54,7 +54,7 @@ function _tareasDetalle(projectId) {
 }
 
 /** Archiva UN proyecto al histórico privado y lo marca Archivado en 02_Proyectos. */
-function archiveProjectToHistory(projectId) {
+function archiveProjectToHistory_(projectId) {
   const p = getProjectById(projectId);
   if (!p) return { ok: false, error: 'no existe' };
   const owner = getPersonById(p.owner_id);
@@ -77,7 +77,7 @@ function archiveProjectToHistory(projectId) {
  * Rollover mensual: archiva los proyectos COMPLETADOS cuyo cierre fue en un mes ANTERIOR al actual.
  * (Los completados del mes en curso siguen visibles con su fecha; se archivan al cambiar de mes.)
  */
-function monthlyRollover() {
+function monthlyRollover_() {
   return withLock(() => {
     const mesActual = getMonthId(today());
     const recId = getRecurringProjectId();
@@ -90,10 +90,10 @@ function monthlyRollover() {
       const tasks = getTasksForProject(p.project_id);
       const fcs = tasks.map(t => t.fecha_completada ? new Date(t.fecha_completada).getTime() : 0).filter(Boolean);
       const cierre = fcs.length ? new Date(Math.max.apply(null, fcs)) : null;
-      if (cierre && getMonthId(cierre) < mesActual) { archiveProjectToHistory(p.project_id); archivados++; }
+      if (cierre && getMonthId(cierre) < mesActual) { archiveProjectToHistory_(p.project_id); archivados++; }
     });
     if (archivados > 0) { try { reconstruirTodo(); } catch (e) { logWarn('rollover rebuild: ' + e.message); } }
-    logInfo('monthlyRollover: ' + archivados + ' proyectos archivados');
+    logInfo('monthlyRollover_: ' + archivados + ' proyectos archivados');
     return { archivados: archivados };
   });
 }

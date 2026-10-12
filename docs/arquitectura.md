@@ -89,12 +89,34 @@ función global se puede invocar con `google.script.run` desde un panel
 abierto. El verificador lo exige (chequeo «Menú Admin comprueba admin en el
 servidor»).
 
-No es una frontera de seguridad: quien puede editar el Sheet puede abrir
-`Extensiones → Apps Script` y cambiar el código, o editar `00_Config`. Evita
-usos accidentales y desde la consola de un panel. Las funciones internas que
-corren desde los disparadores (recordatorio del día de edición, viernes, día 1 y día 4) no
-lo comprueban: si `ADMIN_EMAIL` cambiara después de instalar los disparadores,
-dejarían de correr.
+Qué puede invocar un panel con `google.script.run`, y cómo se limita:
+
+- **Funciones privadas.** En Apps Script, las que terminan en `_` no se pueden
+  invocar desde el cliente. Lo son todas las que envían correo, escriben
+  `00_Config`, archivan o sincronizan el calendario: `sendEmailGTM_`,
+  `sendExecutiveReports_`, `sendThursdayReminders_`,
+  `sendPersonalEvaluationEmail_` (antes cualquiera podía mandar una
+  «evaluación» con el contenido que quisiera), `setConfigValue_`,
+  `monthlyRollover_`, `sincronizarCalendario_`, entre otras. El verificador
+  exige que ningún menú, disparador ni panel apunte a una función privada.
+- **Manejadores de disparadores** (`thursdayReminderJob`, `fridayExecJob`,
+  `dailyDispatcherMorning`…): tienen que ser públicos, así que empiezan con
+  `_assertDisparador()`. En un disparador corren como quien lo instaló, que debe
+  ser `ADMIN_EMAIL`, y pasan; invocados por otra persona fallan sin efectos ni
+  correo de alerta.
+- **`_diag_*` y `_demo*`** (para el editor; `_demoFechas*` sobrescribe fechas)
+  exigen admin. El verificador lo comprueba.
+- **Lo que queda público sin comprobar admin:** lecturas que alimentan los
+  paneles (datos que el equipo ya ve en el Sheet), las ediciones del equipo
+  (exigen el día de edición, `assertCanEditNow`), la reconstrucción de vistas y
+  `autoRefreshDirty`, `onSheetEdit` y `onEvalSheetEdit` (necesitan un evento
+  real de Sheets; un objeto falso desde el cliente no tiene `range`).
+
+Riesgo residual, que nada de esto cierra: quien puede editar el Sheet puede abrir
+`Extensiones → Apps Script` y cambiar el código, o editar `00_Config` (proteja
+esa hoja). Si `ADMIN_EMAIL` cambia sin reinstalar los disparadores, estos fallan
+y Google le notifica el fallo a quien los instaló. Ninguna de estas garantías se
+probó en Google: las pruebas usan dobles de `Session` y del ámbito global.
 
 Si Apps Script no revela el correo de quien ejecuta (cuentas de otro dominio),
 solo se trata como contexto de confianza cuando el script corre como un admin:

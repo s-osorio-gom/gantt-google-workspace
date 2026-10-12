@@ -251,8 +251,8 @@ function evalDia4(modo) {
       calificacion_1_5: 4, comentario_jefe: 'Buen mes', estado: 'LISTO', fecha_evaluacion: 'x' }] }),
     setEvalCell: (tab, fila, col, v) => marcas.push(col + '=' + v),
     renderTemplate: () => '',
-    sendEmailGTM: (o) => { envios.push(o); return { ok: true }; }
-  }, () => G('sendPersonalEvalsDay4')());
+    sendEmailGTM_: (o) => { envios.push(o); return { ok: true }; }
+  }, () => G('sendPersonalEvalsDay4_')());
   return { r, marcas, envios };
 }
 prueba('Evaluación enviada en SANDBOX no queda ENVIADO (si no, en PROD nunca llega)', () => {
@@ -277,10 +277,9 @@ function relevantesSabado(modo, enviado) {
     readSheetObjectsFrom: () => [{ _rowIndex: 5, person_id: 'P002', tipo: 'Otro', relevante: 'r',
       comentario_lider: 'ok', enviado: enviado === undefined ? 'FALSE' : enviado, semana: '2026-W45' }],
     renderTemplate: () => '',
-    sendEmailGTM: (o) => { envios.push(o); return { ok: true }; }
+    sendEmailGTM_: (o) => { envios.push(o); return { ok: true }; }
   };
-  dobles.sendEmailGTM_ = dobles.sendEmailGTM;
-  con(dobles, () => G(ctx.enviarRelevantesComentados_ ? 'enviarRelevantesComentados_' : 'enviarRelevantesComentados')());
+  con(dobles, () => G('enviarRelevantesComentados_')());
   return { escrituras, envios, marcas: escrituras.map(e => e[2]) };
 }
 prueba('Relevantes en SANDBOX: se envían una vez y quedan marcados SANDBOX, no TRUE', () => {
@@ -307,7 +306,7 @@ function contenedor(personas, proyectos) {
     nextId: () => 'PR009',
     appendRowByObject: (hoja, o) => filas.push(o),
     setCellByHeader: (hoja, fila, col, v) => celdas.push(col + '=' + v),
-    setConfigValue: (k, v) => { estado.config[k] = v; }
+    setConfigValue_: (k, v) => { estado.config[k] = v; }
   }, () => { try { pid = G('_ensureRecurringContainer')(); } catch (e) { error = e.message; } });
   return { filas, celdas, error, pid };
 }
@@ -363,6 +362,7 @@ prueba('Recurrencia quincenal conserva la alternancia al cambiar de año', () =>
 // disparó cada tarea mensual.
 function despachos(config, desde, hasta) {
   estado.config = Object.assign({ ADMIN_EMAIL: 'admin@example.com' }, config);
+  estado.efectivo = 'admin@example.com';   // contexto de disparador: corre como quien lo instaló
   const hechos = { eval: [], rec: [], dia4: [] };
   let hoy = fecha(desde);
   const fin = fecha(hasta).getTime();
@@ -370,9 +370,9 @@ function despachos(config, desde, hasta) {
     const h = hoy;
     con({
       today: () => h,
-      monthlyRollover: () => {}, monthlyEvalJob: () => hechos.eval.push(iso(h)),
+      monthlyRollover_: () => {}, monthlyEvalJob: () => hechos.eval.push(iso(h)),
       generateRecurringTasks: () => hechos.rec.push(iso(h)),
-      sendPersonalEvalsDay4: () => hechos.dia4.push(iso(h))
+      sendPersonalEvalsDay4_: () => hechos.dia4.push(iso(h))
     }, () => G('dailyDispatcherMorning')());
     hoy = G(`new Date(${h.getFullYear()}, ${h.getMonth()}, ${h.getDate() + 1})`);
   }
@@ -403,7 +403,7 @@ function ejecutivosAhora(quien) {
   let enviados = 0, error = '';
   con({
     SpreadsheetApp: UI_DOBLE, generateSnapshot: () => {},
-    sendExecutiveReports: () => { enviados++; return { sent: 1, total: 1 }; }
+    sendExecutiveReports_: () => { enviados++; return { sent: 1, total: 1 }; }
   }, () => { try { G('sendExecNowFromMenu')(); } catch (e) { error = e.message; } });
   return { enviados, error };
 }
@@ -462,9 +462,10 @@ prueba('Validación avisa si ningún jefe es jefe del canal (la evaluación mens
 });
 prueba('Día 1: si la evaluación mensual falla (sin jefe del canal), las recurrentes igual se generan', () => {
   estado.config = { ADMIN_EMAIL: 'admin@example.com' };
+  estado.efectivo = 'admin@example.com';
   let rec = 0;
   con({
-    today: () => fecha('2027-03-01'), monthlyRollover: () => {}, sendPersonalEvalsDay4: () => {},
+    today: () => fecha('2027-03-01'), monthlyRollover_: () => {}, sendPersonalEvalsDay4_: () => {},
     monthlyEvalJob: () => { throw new Error('No se encontró jefe del canal'); },
     generateRecurringTasks: () => { rec++; }, MailApp: { sendEmail() {} }
   }, () => G('dailyDispatcherMorning')());
@@ -550,7 +551,7 @@ function envios(lista, modo) {
   con({
     readSheetAsObjects: () => { lecturas++; return { rows: [] }; },
     logEvent: () => {}, MailApp: { sendEmail: (to) => mandados.push(to) }
-  }, () => lista.forEach(([to, periodo]) => G('sendEmailGTM')({ eventType: 'x', period: periodo,
+  }, () => lista.forEach(([to, periodo]) => G('sendEmailGTM_')({ eventType: 'x', period: periodo,
     realToEmail: to, realToName: to, subject: 's', htmlBody: '' })));
   G('_cacheEmailLog = null');
   return { lecturas, mandados };
@@ -589,7 +590,6 @@ function recordatorioJob(dia, hoy) {
   estado.efectivo = 'admin@example.com';
   let envios = 0; const avisos = [];
   con({ today: () => fecha(hoy), MailApp: { sendEmail: (to, asunto) => avisos.push(to + ' | ' + asunto) },
-        sendThursdayReminders: () => { envios++; return { sent: 1, total: 1 }; },
         sendThursdayReminders_: () => { envios++; return { sent: 1, total: 1 }; } },
       () => G('thursdayReminderJob')());
   return { envios, avisos };
@@ -606,7 +606,7 @@ prueba('Recordatorio con día de edición viernes o sábado no promete el report
 });
 
 // ── PROD: un fallo entre el envío y la marca de la fila no reenvía ─────────
-// sendEmailGTM real; el log persiste entre «ejecuciones» y la marca de la fila falla.
+// sendEmailGTM_ real; el log persiste entre «ejecuciones» y la marca de la fila falla.
 function conLogPersistente(fn) {
   const log = [], correos = [];
   const dobles = {
@@ -626,7 +626,7 @@ prueba('Evaluación en PROD: si falla la marca ENVIADO, el reintento no la reenv
   G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
   const fila = { _rowIndex: 2, year: 2026, month: 10, person_id: 'P002', calificacion_1_5: 4,
                  comentario_jefe: 'Buen mes', estado: 'LISTO', fecha_evaluacion: 'x' };
-  const fn = ctx.sendPersonalEvalsDay4_ ? 'sendPersonalEvalsDay4_' : 'sendPersonalEvalsDay4';
+  const fn = 'sendPersonalEvalsDay4_';
   const t = conLogPersistente(() => G(fn)());
   t.ejecucion(DIA4(fila)); t.ejecucion(DIA4(fila));
   igual(t.correos.length, 1);
@@ -640,10 +640,44 @@ prueba('Relevantes en PROD: si falla la marca enviado, el reintento no los reenv
   const extra = { today: () => fecha('2026-11-07'), getConfidSS: () => ({ getSheetByName: () => hoja }),
     readSheetObjectsFrom: () => [{ _rowIndex: 5, person_id: 'P002', tipo: 'Otro', relevante: 'r',
       comentario_lider: 'ok', enviado: '', semana: '2026-W45', timestamp: 'x' }] };
-  const fn = ctx.enviarRelevantesComentados_ ? 'enviarRelevantesComentados_' : 'enviarRelevantesComentados';
+  const fn = 'enviarRelevantesComentados_';
   const t = conLogPersistente(() => { try { G(fn)(); } catch (_) {} });
   t.ejecucion(extra); t.ejecucion(extra);
   igual(t.correos.length, 1);
+});
+
+// ── funciones internas fuera del alcance de google.script.run ──────────────
+// En Apps Script, una función cuyo nombre termina en «_» no se puede invocar
+// desde el cliente (google.script.run) ni desde el menú Ejecutar.
+const INTERNAS = ['setConfigValue', 'monthlyRollover', 'uninstallAllTriggers', 'sendExecutiveReports',
+  'sendThursdayReminders', 'enviarRelevantesComentados', 'sendPersonalEvalsDay4', 'sendPersonalEvaluationEmail',
+  'sendMonthlyEvalEmailToBoss', 'sendEmailGTM', 'sendWelcomeEmail', 'sendMotivationalEmail', 'sendIndividualReport',
+  'sendRecordatorios', 'sincronizarCalendario', 'archiveProjectToHistory', 'clearWeeklyComments'];
+prueba('Funciones que envían correo, escriben 00_Config o archivan son privadas (terminan en «_»)', () => {
+  igual(INTERNAS.filter(f => typeof ctx[f] === 'function' || typeof ctx[f + '_'] !== 'function'), []);
+});
+const MANEJADORES = ['thursdayReminderJob', 'fridayExecJob', 'satRelevantesJob', 'dailyDispatcherMorning',
+  'dailyDispatcherAfternoon', 'weeklyJob', 'sundayReminderJob', 'weeklySnapshotPre', 'monthlyEvalJob', 'motivationalJob'];
+prueba('Manejadores de disparadores: un no-admin que los invoca no logra nada (ni correo de alerta)', () => {
+  estado.config = { ADMIN_EMAIL: 'admin@example.com' };
+  estado.activo = 'ana@example.com'; estado.efectivo = 'ana@example.com';
+  const correos = [], pasaron = [];
+  con({ MailApp: { sendEmail: (to) => correos.push(to) }, today: () => { throw new Error('pasó el guardia'); } }, () => {
+    MANEJADORES.forEach(fn => { try { G(fn)(); pasaron.push(fn); } catch (e) { if (!/administrador/.test(e.message)) pasaron.push(fn); } });
+  });
+  igual([pasaron, correos], [[], []]);
+});
+prueba('Manejadores de disparadores: en contexto de disparador (corre como el admin) sí pasan', () => {
+  estado.config = { ADMIN_EMAIL: 'admin@example.com', EDIT_LOCK_DAY: 4 };
+  estado.activo = ''; estado.efectivo = 'admin@example.com';
+  let envios = 0;
+  const stub = () => { envios++; return { sent: 1, total: 1 }; };
+  con({ today: () => fecha('2026-10-08'), sendThursdayReminders_: stub },
+      () => G('thursdayReminderJob')());
+  estado.activo = 'admin@example.com';
+  con({ today: () => fecha('2026-10-08'), sendThursdayReminders_: stub },
+      () => G('thursdayReminderJob')());
+  igual(envios, 2);
 });
 
 console.log('\n  ' + '─'.repeat(56));

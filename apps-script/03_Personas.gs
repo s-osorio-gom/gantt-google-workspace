@@ -118,7 +118,7 @@ function addPerson(payload) {
 
     // Enviar correo de bienvenida (respeta modo SANDBOX)
     if (!isBoss && getConfigBool('SEND_WELCOME_EMAIL', true)) {
-      try { sendWelcomeEmail(personId); }
+      try { sendWelcomeEmail_(personId); }
       catch (e) { logWarn('No se pudo enviar bienvenida: ' + e.message); }
     }
 

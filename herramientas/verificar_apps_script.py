@@ -13,6 +13,8 @@ lunes y el correo no sale. Esto adelanta lo comprobable:
     duplicados    ninguna función definida dos veces
     referencias   menús, disparadores y google.script.run apuntan a funciones que existen
     admin         cada entrada del menú Admin llama assertAdmin() en el servidor
+    privadas      nada del cliente, menú o disparador apunta a una función privada (…_)
+    diagnóstico   _diag_* y _demo* llaman assertAdmin()
     innerHTML     los paneles no concatenan datos sin esc() en innerHTML
     zona horaria  ninguna fecha usa una zona escrita a mano (sale de appsscript.json)
     manifiesto    appsscript.json es válido y declara sus permisos
@@ -336,6 +338,33 @@ def main() -> int:
             (f"{len(sin_control)} de {len(manejadores)} sin assertAdmin()" if sin_control
              else f"{len(manejadores)} / {len(manejadores)} con assertAdmin()"))
     for fn in sin_control[:20]:
+        print(f"        · {fn}()")
+
+    # ── funciones privadas y de diagnóstico ─────────────────────────────────
+    # En Apps Script, una función que termina en «_» es privada: google.script.run,
+    # el menú y los disparadores no pueden llamarla. Las internas que envían correo
+    # o escriben configuración son privadas; nada externo debe apuntar a ellas.
+    privadas = []
+    for f in gs:
+        texto = f.read_text(encoding="utf-8")
+        for patron, que in ((MENU, "menú"), (TRIGGER, "disparador")):
+            privadas += [f"{f.name}: {que} → {fn}()" for fn in patron.findall(texto) if fn.endswith("_")]
+    for f in html:
+        texto = f.read_text(encoding="utf-8")
+        privadas += [f"{f.name}: google.script.run → {fn}()"
+                     for fn in funciones_run(texto) + CALL_HELPER.findall(texto) if fn.endswith("_")]
+    revisar("Menú, disparadores y paneles no apuntan a funciones privadas (…_)", not privadas,
+            f"{len(privadas)} referencias" if privadas else "ninguna")
+    for x in privadas[:8]:
+        print(f"        · {x}")
+
+    # _diag_* y _demo* se corren desde el editor; son públicas, así que cualquiera
+    # con un panel abierto podría invocarlas. _demoFechas* sobrescribe fechas.
+    diag = sorted(fn for fn in donde if re.match(r"_(diag|demo)", fn) and not fn.endswith("_"))
+    diag_sin = [fn for fn in diag if "assertAdmin(" not in (cuerpo_funcion(todo_gs, fn) or "")]
+    revisar("Funciones _diag/_demo comprueban admin", not diag_sin,
+            f"{len(diag_sin)} de {len(diag)} sin assertAdmin()" if diag_sin else f"{len(diag)} / {len(diag)}")
+    for fn in diag_sin[:10]:
         print(f"        · {fn}()")
 
     # ── innerHTML con datos sin escapar ─────────────────────────────────────

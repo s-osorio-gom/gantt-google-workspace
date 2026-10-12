@@ -82,7 +82,7 @@ function syncRelevantesToConfid() {
 }
 
 /** DUEÑO: envía a cada persona sus relevantes YA comentados por el jefe operativo y no enviados. */
-function enviarRelevantesComentados() {
+function enviarRelevantesComentados_() {
   let confid;
   try { confid = getConfidSS(); } catch (e) { return { sent: 0, error: e.message }; }
   const rows = readSheetObjectsFrom(confid, 'Relevantes')
@@ -111,7 +111,7 @@ function enviarRelevantesComentados() {
       support_email: getConfig('SUPPORT_EMAIL') || 'admin@example.com'
     };
     const html = renderTemplate('email_relevantes', ctx);
-    const res = sendEmailGTM({
+    const res = sendEmailGTM_({
       // Huella del lote (filas y comentarios): si el correo sale pero falla la marca
       // de las filas, el reintento lo detiene el log; un lote nuevo sí sale.
       eventType: 'relevantes_feedback',
@@ -145,6 +145,7 @@ function _relevantePendiente(enviado) {
  * simula el comentario del jefe operativo y lo envía. Devuelve el resultado del envío.
  */
 function _diag_pruebaRelevanteCompleto() {
+  assertAdmin('usar la función de diagnóstico _diag_pruebaRelevanteCompleto');
   const admin = getActivePersons().find(p => String(p.email).toLowerCase() === String(getConfig('ADMIN_EMAIL') || '').toLowerCase())
              || getPersonById('P006') || getActivePersons()[0];
   const proj = getActiveProjectsForUI()[0];
@@ -159,13 +160,13 @@ function _diag_pruebaRelevanteCompleto() {
     rel.getRange(pend[pend.length - 1]._rowIndex, colMap['comentario_lider'])
        .setValue('Excelente avance. Coordina la firma para el viernes. — el jefe operativo');
   }
-  return enviarRelevantesComentados();
+  return enviarRelevantesComentados_();
 }
 
 /** Atajo admin/el jefe operativo desde menú. */
 function enviarRelevantesDesdeMenu() {
   assertAdmin('enviar los relevantes comentados');
-  const r = enviarRelevantesComentados();
+  const r = enviarRelevantesComentados_();
   SpreadsheetApp.getUi().alert('Relevantes comentados',
     'Enviados a ' + (r.sent || 0) + ' persona(s)' + (r.error ? ('\n\n' + r.error) : '') +
     (isSandboxMode() ? '\n\n(SANDBOX: van al admin y quedan marcados enviado=SANDBOX; no se reenvían en PROD)' : ''),

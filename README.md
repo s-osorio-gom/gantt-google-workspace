@@ -72,7 +72,7 @@ cada minuto  autoRefreshDirty ─ si alguien editó: Resumen, Logros y relevante
 al editar    onSheetEdit (casilla ✔ completa la tarea) · onEvalSheetEdit (marca LISTO)
 ```
 
-Todo envío pasa por `sendEmailGTM()`: respeta `SANDBOX`, registra en
+Todo envío pasa por `sendEmailGTM_()`: respeta `SANDBOX`, registra en
 `08_Email_Log` y no repite `(tipo, periodo, destinatario, modo)`. Detalle de
 reglas (estado de un proyecto, permisos, idempotencia, fechas) en
 [`docs/arquitectura.md`](docs/arquitectura.md).
@@ -166,15 +166,17 @@ python3 herramientas/verificar_apps_script.py apps-script
   [OK  ] Cada <script> de los paneles parsea — 8 / 8
   [OK  ] Cada plantilla referenciada existe — 16 / 16 referencias
   [OK  ] Sin plantillas huérfanas — 20 en uso
-  [OK  ] Ninguna función definida dos veces — 287 funciones
+  [OK  ] Ninguna función definida dos veces — 293 funciones
   [OK  ] Menús, disparadores y paneles llaman funciones que existen — todas resuelven
   [OK  ] Menú Admin comprueba admin en el servidor — 20 / 20 con assertAdmin()
+  [OK  ] Menú, disparadores y paneles no apuntan a funciones privadas (…_) — ninguna
+  [OK  ] Funciones _diag/_demo comprueban admin — 13 / 13
   [OK  ] innerHTML de los paneles sin datos sin escapar — todo pasa por esc()
   [OK  ] Fechas en la zona de appsscript.json, no en una escrita a mano — usan tz()
   [OK  ] appsscript.json válido — 7 permisos · V8 · America/Bogota
   [OK  ] Sin correos fuera de los de ejemplo — dominios permitidos: …
   [OK  ] Sin identificadores de Sheets o Drive en el código — limpio
-  [OK  ] Pruebas de lógica (pruebas_logica.js) — 55 / 55 pruebas pasan
+  [OK  ] Pruebas de lógica (pruebas_logica.js) — 65 / 65 pruebas pasan
 ```
 
 Sale con código 1 si algún chequeo crítico falla; el workflow
@@ -241,9 +243,12 @@ Lista completa en [`docs/instalacion.md`](docs/instalacion.md#4--llenar-00_confi
 
 ## Limitaciones conocidas
 
-- **Los permisos del menú no son una frontera.** Ocultar el menú Admin y
-  comprobar `ADMIN_EMAILS` en el servidor evita errores, pero quien puede editar
-  el Sheet puede editar `00_Config`. Proteja `00_Config` como hoja protegida
+- **Los permisos no son una frontera completa.** El menú Admin, los
+  manejadores de disparadores y las funciones de diagnóstico comprueban
+  `ADMIN_EMAILS` en el servidor, y lo que envía correo es privado (no se puede
+  invocar desde un panel); pero quien puede editar el Sheet puede abrir el
+  editor de Apps Script o editar `00_Config`. Detalle en
+  [`docs/arquitectura.md`](docs/arquitectura.md#permisos). Proteja `00_Config` como hoja protegida
   (`Datos → Proteger hojas y rangos`). `01_Personas`, `02_Proyectos` y
   `03_Tareas` no se pueden proteger igual: los paneles escriben ahí con la
   cuenta de quien los usa.

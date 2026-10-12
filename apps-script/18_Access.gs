@@ -87,6 +87,20 @@ function assertAdmin(accion) {
   }
 }
 
+/**
+ * Guardia de los manejadores de disparadores. Tienen que ser públicos (un
+ * disparador no puede apuntar a una función privada) y por eso cualquiera con
+ * un panel abierto podría invocarlos con google.script.run. Desde un disparador
+ * corren como quien los instaló, que debe ser ADMIN_EMAIL: isAdminUser() pasa
+ * (correo activo = instalador, o vacío con usuario efectivo = instalador).
+ * Va antes de withErrorAlert: un intento ajeno no le manda alertas al admin. Si
+ * ADMIN_EMAIL cambia sin reinstalar, el disparador falla y Google le notifica
+ * el fallo a quien lo instaló.
+ */
+function _assertDisparador(nombre) {
+  assertAdmin('ejecutar ' + nombre + ' (lo corren los disparadores instalados por el admin)');
+}
+
 function editLockEnabled() { return getConfigBool('EDIT_LOCK_ENABLED', true); }
 /** Día de edición del equipo: 0=domingo … 4=jueves. Fuera de 0–6 se usa el jueves. */
 function editLockDay() {
@@ -154,6 +168,7 @@ function whoAmI() {
 
 /** Diagnóstico: evalúa el permiso para un email simulado (para QA). */
 function _diag_canEdit(email) {
+  assertAdmin('usar la función de diagnóstico _diag_canEdit');
   return {
     email: email,
     isAdmin: isAdminUser(email),
@@ -182,7 +197,7 @@ function ensureAccessConfig() {
   const added = [];
   Object.keys(defaults).forEach(k => {
     if (cfg[k] === undefined) {
-      setConfigValue(k, defaults[k]);
+      setConfigValue_(k, defaults[k]);
       added.push(k);
     }
   });

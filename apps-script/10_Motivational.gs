@@ -31,7 +31,7 @@ function getMotivationalMessage(monthNumber) {
 /**
  * Envía el correo motivacional a una persona.
  */
-function sendMotivationalEmail(personId, monthDate) {
+function sendMotivationalEmail_(personId, monthDate) {
   if (!monthDate) monthDate = today();
   const person = getPersonById(personId);
   if (!person) throw new Error('Persona no encontrada: ' + personId);
@@ -53,7 +53,7 @@ function sendMotivationalEmail(personId, monthDate) {
   };
 
   const html = renderTemplate('email_motivacional', ctx);
-  return sendEmailGTM({
+  return sendEmailGTM_({
     eventType: 'monthly_motivational',
     period: year + '-' + String(monthNumber).padStart(2, '0'),
     realToEmail: person.email,
@@ -67,6 +67,7 @@ function sendMotivationalEmail(personId, monthDate) {
  * Trigger del último día del mes (ejecutado por un cron diario que valida si es el último).
  */
 function motivationalJob() {
+  _assertDisparador('motivationalJob');
   return withErrorAlert(() => {
     if (!getConfigBool('MOTIVATIONAL_ENABLED', true)) {
       logInfo('motivationalJob: deshabilitado por config');
@@ -82,7 +83,7 @@ function motivationalJob() {
     const personas = getActivePersons().filter(p => toBool(p.recibe_motivacional));
     let sent = 0;
     personas.forEach(p => {
-      const r = sendMotivationalEmail(p.person_id, d);
+      const r = sendMotivationalEmail_(p.person_id, d);
       if (r && r.ok) sent++;
     });
     logInfo('motivationalJob: ' + sent + ' enviados de ' + personas.length);

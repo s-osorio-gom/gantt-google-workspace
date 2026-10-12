@@ -83,7 +83,7 @@ function goToResumen() {
 /** Envía el recordatorio del día de edición ahora (admin, respeta SANDBOX). */
 function sendThursdayNowFromMenu() {
   assertAdmin('enviar el recordatorio');
-  const r = sendThursdayReminders();
+  const r = sendThursdayReminders_();
   SpreadsheetApp.getUi().alert('Recordatorio enviado',
     'Enviados: ' + r.sent + ' de ' + r.total + (isSandboxMode() ? '\n\n(SANDBOX: los correos van al admin)' : ''),
     SpreadsheetApp.getUi().ButtonSet.OK);
@@ -93,7 +93,7 @@ function sendThursdayNowFromMenu() {
 function sendExecNowFromMenu() {
   assertAdmin('enviar los ejecutivos');
   try { generateSnapshot(); } catch (e) {}
-  const r = sendExecutiveReports();
+  const r = sendExecutiveReports_();
   SpreadsheetApp.getUi().alert('Ejecutivos enviados',
     'Enviados: ' + r.sent + ' de ' + r.total + (isSandboxMode() ? '\n\n(SANDBOX: los correos van al admin)' : ''),
     SpreadsheetApp.getUi().ButtonSet.OK);
@@ -299,7 +299,7 @@ function openInactivatePersonDialog() {
  * ============================================================================ */
 function switchToSandbox() {
   assertAdmin('cambiar el modo del sistema');
-  setConfigValue('SYSTEM_MODE', 'SANDBOX');
+  setConfigValue_('SYSTEM_MODE', 'SANDBOX');
   SpreadsheetApp.getUi().alert('Sistema en modo SANDBOX. Los correos se redirigen al admin.');
 }
 function switchToProd() {
@@ -314,7 +314,7 @@ function switchToProd() {
     'Los correos se enviarán a destinatarios REALES. ¿Confirmas?',
     ui.ButtonSet.YES_NO);
   if (r !== ui.Button.YES) return;
-  setConfigValue('SYSTEM_MODE', 'PROD');
+  setConfigValue_('SYSTEM_MODE', 'PROD');
   ui.alert('Sistema en modo PROD. Los correos salen a los destinatarios reales desde el próximo ' +
     'disparador (recordatorio: ' + _ctxDiaEdicion().dia_edicion + ' 8:30; ejecutivo: viernes 8:30).');
 }
@@ -322,7 +322,7 @@ function switchToProd() {
 /**
  * Modifica un valor en 00_Config.
  */
-function setConfigValue(key, value) {
+function setConfigValue_(key, value) {
   const data = readSheetAsObjects(SHEET_NAMES.CONFIG);
   const row = data.rows.find(r => r.clave === key);
   if (row) {
