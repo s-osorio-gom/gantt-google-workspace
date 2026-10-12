@@ -140,10 +140,15 @@ HTML en el navegador y pasan todo dato por `esc()` (el verificador lo exige).
 Cada envío deja una fila en `08_Email_Log` con `(tipo, periodo, destinatario,
 modo)`. Antes de enviar se consulta. Si un disparador falla a medias y se
 reintenta, quien ya recibió no recibe dos veces. En las evaluaciones y los
-relevantes el periodo lleva además una huella del contenido (`2026-10#…`): si
-el correo salió pero falló la marca de la fila, el reintento se detiene; si el
-jefe corrige la evaluación, la corrección sí sale. Queda una ventana mínima sin
-cubrir: que `MailApp` envíe y la escritura del log falle en ese mismo instante. El periodo se compara como
+relevantes el periodo lleva además una huella del contenido: evaluación =
+mes + calificación + comentario (`2026-10#…`); relevantes = persona + marca de
+tiempo, texto y comentario de cada uno (`rel-P002#…`, sin semana ni número de
+fila). Si el correo salió pero falló la marca de la fila, cualquier reintento
+posterior con el mismo contenido —el mismo día, otro sábado o con las filas
+reordenadas— lo detiene el log. Un contenido distinto (evaluación corregida,
+relevante o comentario nuevo) sí sale; en los relevantes, ese correo nuevo
+repite los del lote que no quedaron marcados. Sin cubrir: que `MailApp` envíe
+y la escritura del log falle en ese mismo instante. El periodo se compara como
 texto: Sheets convierte `2026-06` en fecha al guardarlo, y se normaliza al
 leerlo. La foto de `06_Snapshots` se deduplica por semana (`snapshot_week`).
 

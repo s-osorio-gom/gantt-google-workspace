@@ -112,11 +112,13 @@ function enviarRelevantesComentados_() {
     };
     const html = renderTemplate('email_relevantes', ctx);
     const res = sendEmailGTM_({
-      // Huella del lote (filas y comentarios): si el correo sale pero falla la marca
-      // de las filas, el reintento lo detiene el log; un lote nuevo sí sale.
+      // Huella del contenido del lote, sin semana ni número de fila: si el correo
+      // sale pero falla la marca, ningún reintento posterior (otro sábado, filas
+      // reordenadas) lo repite; un relevante o comentario nuevo cambia la huella.
       eventType: 'relevantes_feedback',
-      period: getWeekId(today()) + '-' + pid + '#' + _huella(byPerson[pid].map(r =>
-        [r._rowIndex, r.timestamp, r.relevante, r.comentario_lider].join('|')).join('§')),
+      period: 'rel-' + pid + '#' + _huella(byPerson[pid].map(r => [
+        r.timestamp instanceof Date ? r.timestamp.getTime() : String(r.timestamp || ''),
+        String(r.relevante || '').trim(), String(r.comentario_lider || '').trim()].join('|')).sort().join('§')),
       realToEmail: person.email, realToName: person.nombre,
       subject: 'Comentarios a tus relevantes de la semana', htmlBody: html
     });

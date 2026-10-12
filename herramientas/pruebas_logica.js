@@ -681,6 +681,27 @@ prueba('Manejadores de disparadores: en contexto de disparador (corre como el ad
   igual(envios, 2);
 });
 
+// ── huella de los relevantes: ni la semana ni la fila la cambian ───────────
+function relevantesConMarcaFallida(corridas) {
+  estado.config = { SYSTEM_MODE: 'PROD', ADMIN_EMAIL: 'admin@example.com' };
+  G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
+  const hoja = { getRange: () => ({ setValue: () => { throw new Error('la hoja privada no respondió'); } }) };
+  const t = conLogPersistente(() => { try { G('enviarRelevantesComentados_')(); } catch (_) {} });
+  corridas.forEach(([dia, filas]) => t.ejecucion({ today: () => fecha(dia),
+    getConfidSS: () => ({ getSheetByName: () => hoja }), readSheetObjectsFrom: () => filas }));
+  return t.correos.length;
+}
+const REL = (fila, ts, texto) => ({ _rowIndex: fila, person_id: 'P002', tipo: 'Otro', relevante: texto || 'r',
+  comentario_lider: 'ok', enviado: '', semana: '2026-W45', timestamp: ts || 'x' });
+prueba('Relevantes: si falla la marca, el reintento del sábado siguiente no los reenvía', () => {
+  igual(relevantesConMarcaFallida([['2026-11-07', [REL(5)]], ['2026-11-14', [REL(5)]]]), 1);
+});
+prueba('Relevantes: filas que cambian de posición u orden no cambian la huella; un lote nuevo sí sale', () => {
+  igual(relevantesConMarcaFallida([['2026-11-07', [REL(5, 'a'), REL(6, 'b')]],
+                                   ['2026-11-07', [REL(9, 'b'), REL(8, 'a')]]]), 1);
+  igual(relevantesConMarcaFallida([['2026-11-07', [REL(5, 'a')]], ['2026-11-14', [REL(5, 'a'), REL(6, 'c', 'nuevo')]]]), 2);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);
