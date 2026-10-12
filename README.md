@@ -117,8 +117,9 @@ festivos salen de `00_Config` y de `01_Personas`. El equipo de ejemplo de
 - **Cuenta:** Google Workspace (recomendado). Con `@gmail.com` funciona casi
   todo, con un cupo de correos diarios y de ejecución de disparadores mucho
   menor.
-- **Quién instala:** la cuenta que será `ADMIN_EMAIL`. Los disparadores corren
-  y envían correo como quien los instala.
+- **Quién instala:** una cuenta que esté en `ADMIN_EMAIL` o `ADMIN_EMAILS`
+  (recomendado: la de `ADMIN_EMAIL`, que recibe las alertas). Los disparadores
+  corren y envían correo como quien los instala.
 - **Permisos OAuth** (los 7 de `appsscript.json`, cada uno con uso en el
   código; tabla en [`docs/instalacion.md`](docs/instalacion.md#0--requisitos)).
   `script.send_mail` y `calendar` suelen requerir aprobación de TI en cuentas
@@ -225,7 +226,7 @@ pestañas base` siembra las claves con su descripción. Las principales:
 | Clave | Para qué |
 |---|---|
 | `SYSTEM_MODE` | `SANDBOX` (todo a `SANDBOX_REDIRECT_TO` o, si está vacío, a `ADMIN_EMAIL`) o `PROD` |
-| `ADMIN_EMAIL`, `ADMIN_EMAILS` | Administradores. `ADMIN_EMAIL` debe ser quien instala los disparadores |
+| `ADMIN_EMAIL`, `ADMIN_EMAILS` | Administradores. Quien instala los disparadores debe estar en alguna de las dos (recomendado: `ADMIN_EMAIL`) |
 | `SUPERVISOR_EMAILS` | Editan cualquier día, sin menú Admin |
 | `EMAIL_DOMAIN` | Dominio admitido al dar de alta una persona |
 | `EDIT_LOCK_ENABLED`, `EDIT_LOCK_DAY` | El equipo solo edita un día de la semana (por defecto jueves, `4`) |

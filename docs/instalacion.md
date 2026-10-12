@@ -110,7 +110,7 @@ Obligatorias para arrancar:
 | Clave | Ejemplo | Qué hace |
 |---|---|---|
 | `SYSTEM_MODE` | `SANDBOX` | En SANDBOX **todos** los correos van a `SANDBOX_REDIRECT_TO` o, si está vacía, a `ADMIN_EMAIL` |
-| `ADMIN_EMAIL` | `admin@example.org` | Administrador. Recibe errores y muestras. **Debe ser la cuenta que instala los disparadores** |
+| `ADMIN_EMAIL` | `admin@example.org` | Administrador. Recibe errores y muestras. **Quien instala los disparadores debe estar aquí o en `ADMIN_EMAILS`** (recomendado: esta cuenta) |
 | `EMAIL_DOMAIN` | `example.org` | Dominio admitido al dar de alta una persona |
 | `SUPPORT_EMAIL` | `admin@example.org` | Pie de los correos |
 | `EVAL_SHEET_ID` | `1AbC…` | El Sheet **privado** de evaluaciones |
@@ -193,9 +193,11 @@ La jerarquía se arma con banderas en `01_Personas`:
 
 ## 6 · Instalar los disparadores
 
-Desde el menú, `Admin → ⏰ Instalar / reinstalar disparadores`, **con la cuenta
-de `ADMIN_EMAIL`**: los disparadores corren y envían correo como quien los
-instala. Quedan ocho (siete si `EVAL_SHEET_ID` no es accesible); la lista está
+Desde el menú, `Admin → ⏰ Instalar / reinstalar disparadores`, **con una
+cuenta que esté en `ADMIN_EMAIL` o `ADMIN_EMAILS`** (recomendado: la de
+`ADMIN_EMAIL`, que recibe las alertas): los disparadores corren y envían correo
+como quien los instala, y cada uno comprueba al arrancar que esa cuenta siga
+siendo admin. Quedan ocho (siete si `EVAL_SHEET_ID` no es accesible); la lista está
 en el [README](../README.md#qué-hace-en-concreto).
 
 Verifique en `Activadores` del editor de Apps Script que estén todos.
@@ -240,6 +242,6 @@ Cuando los tres estén bien, `Admin → Modo PROD`. No deja pasar si
 | «No se encontró jefe del canal» | Nadie con `recibe_reporte_jefe=TRUE` es `JEFE_CANAL_ID` (o, vacía, `P001` / rol con «canal»). |
 | Falla al leer un Sheet privado | `EVAL_SHEET_ID` o `CONFIDENCIAL_SHEET_ID` vacío, o el archivo no está compartido con quien ejecuta. |
 | «Solo puedes actualizar los jueves» | Bloqueo por día (`EDIT_LOCK_*`). Admins y supervisores están exentos. |
-| Un disparador falla con «Solo un administrador puede ejecutar …» | `ADMIN_EMAIL` cambió y los disparadores siguen instalados por la cuenta anterior. Reinstálelos con la cuenta de `ADMIN_EMAIL`. |
+| Un disparador falla con «Solo un administrador puede ejecutar …» | Quien instaló los disparadores ya no está en `ADMIN_EMAIL` ni en `ADMIN_EMAILS`. Reinstálelos con una cuenta admin. |
 | «Enviadas: 0 … ya se habían enviado con el mismo contenido» | Devolvió una evaluación a `LISTO` sin cambiarla. No se reenvía (sería un duplicado); para reenviarla, cambie su comentario o su calificación. |
 | Error de permisos al instalar | La organización bloquea alcances de OAuth. Es cosa de TI, no del código. |

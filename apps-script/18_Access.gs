@@ -91,8 +91,9 @@ function assertAdmin(accion) {
  * Guardia de los manejadores de disparadores. Tienen que ser públicos (un
  * disparador no puede apuntar a una función privada) y por eso cualquiera con
  * un panel abierto podría invocarlos con google.script.run. Desde un disparador
- * corren como quien los instaló, que debe ser ADMIN_EMAIL: isAdminUser() pasa
- * (correo activo = instalador, o vacío con usuario efectivo = instalador).
+ * corren como quien los instaló, que debe estar en ADMIN_EMAIL o ADMIN_EMAILS:
+ * isAdminUser() pasa (correo activo = instalador, o vacío con usuario efectivo =
+ * instalador).
  * Va antes de withErrorAlert: un intento ajeno no le manda alertas al admin. Si
  * ADMIN_EMAIL cambia sin reinstalar, el disparador falla y Google le notifica
  * el fallo a quien lo instaló.

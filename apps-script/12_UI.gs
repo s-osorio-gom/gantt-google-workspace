@@ -146,7 +146,7 @@ const BASE_TABS = {
 const BASE_CONFIG = [
   ['SYSTEM_MODE', 'SANDBOX', 'SANDBOX: todos los correos van al admin. PROD: a los destinatarios reales.'],
   ['SANDBOX_REDIRECT_TO', '', 'Opcional: a quién van los correos en SANDBOX. Vacío: a ADMIN_EMAIL.'],
-  ['ADMIN_EMAIL', '', 'Administrador: recibe errores y muestras. Debe ser quien instala los disparadores.'],
+  ['ADMIN_EMAIL', '', 'Administrador: recibe errores y muestras. Quien instale los disparadores debe estar aquí o en ADMIN_EMAILS.'],
   ['ADMIN_EMAILS', '', 'Otros administradores, separados por coma (opcional).'],
   ['SUPERVISOR_EMAILS', '', 'Editan cualquier día, sin menú Admin. Separados por coma.'],
   ['SUPPORT_EMAIL', '', 'Correo de soporte que aparece en el pie de los correos.'],

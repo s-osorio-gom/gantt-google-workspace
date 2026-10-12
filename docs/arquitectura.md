@@ -101,8 +101,8 @@ Qué puede invocar un panel con `google.script.run`, y cómo se limita:
   exige que ningún menú, disparador ni panel apunte a una función privada.
 - **Manejadores de disparadores** (`thursdayReminderJob`, `fridayExecJob`,
   `dailyDispatcherMorning`…): tienen que ser públicos, así que empiezan con
-  `_assertDisparador()`. En un disparador corren como quien lo instaló, que debe
-  ser `ADMIN_EMAIL`, y pasan; invocados por otra persona fallan sin efectos ni
+  `_assertDisparador()`. En un disparador corren como quien lo instaló, que debe estar en
+  `ADMIN_EMAIL` o `ADMIN_EMAILS`, y pasan; invocados por otra persona fallan sin efectos ni
   correo de alerta.
 - **`_diag_*` y `_demo*`** (para el editor; `_demoFechas*` sobrescribe fechas)
   exigen admin. El verificador lo comprueba.
@@ -114,8 +114,9 @@ Qué puede invocar un panel con `google.script.run`, y cómo se limita:
 
 Riesgo residual, que nada de esto cierra: quien puede editar el Sheet puede abrir
 `Extensiones → Apps Script` y cambiar el código, o editar `00_Config` (proteja
-esa hoja). Si `ADMIN_EMAIL` cambia sin reinstalar los disparadores, estos fallan
-y Google le notifica el fallo a quien los instaló. Ninguna de estas garantías se
+esa hoja). Si quien instaló los disparadores deja de estar en `ADMIN_EMAIL` /
+`ADMIN_EMAILS` sin reinstalarlos, estos fallan y Google le notifica el fallo a
+quien los instaló. Ninguna de estas garantías se
 probó en Google: las pruebas usan dobles de `Session` y del ámbito global.
 
 Si Apps Script no revela el correo de quien ejecuta (cuentas de otro dominio),
