@@ -170,13 +170,14 @@ python3 herramientas/verificar_apps_script.py apps-script
   [OK  ] Menús, disparadores y paneles llaman funciones que existen — todas resuelven
   [OK  ] Menú Admin comprueba admin en el servidor — 20 / 20 con assertAdmin()
   [OK  ] Menú, disparadores y paneles no apuntan a funciones privadas (…_) — ninguna
+  [OK  ] Manejadores de disparadores llaman _assertDisparador() — 10 / 10
   [OK  ] Funciones _diag/_demo comprueban admin — 13 / 13
   [OK  ] innerHTML de los paneles sin datos sin escapar — todo pasa por esc()
   [OK  ] Fechas en la zona de appsscript.json, no en una escrita a mano — usan tz()
   [OK  ] appsscript.json válido — 7 permisos · V8 · America/Bogota
   [OK  ] Sin correos fuera de los de ejemplo — dominios permitidos: …
   [OK  ] Sin identificadores de Sheets o Drive en el código — limpio
-  [OK  ] Pruebas de lógica (pruebas_logica.js) — 65 / 65 pruebas pasan
+  [OK  ] Pruebas de lógica (pruebas_logica.js) — 68 / 68 pruebas pasan
 ```
 
 Sale con código 1 si algún chequeo crítico falla; el workflow

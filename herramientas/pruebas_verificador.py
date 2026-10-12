@@ -94,6 +94,34 @@ class ChequeoDiagnostico(unittest.TestCase):
         self.assertEqual(e[DIAG], "OK")
 
 
+DISPARADORES = "Manejadores de disparadores llaman _assertDisparador()"
+TRIGGER = """
+function hacer() { assertAdmin('x'); }
+function _assertDisparador(n) { assertAdmin(n); }
+function instalar() {
+  ScriptApp.newTrigger('trabajoDiario').timeBased().everyDays(1).create();
+  ScriptApp.newTrigger('onSheetEdit').forSpreadsheet(x).onEdit().create();
+}
+function onSheetEdit(e) { return e; }
+"""
+
+
+class ChequeoDisparadores(unittest.TestCase):
+    def test_disparador_sin_guardia_falla(self):
+        e = correr(TRIGGER + "function trabajoDiario() {\n  // _assertDisparador('x');\n}\n")
+        self.assertEqual(e[DISPARADORES], "FALLA")
+
+    def test_disparador_con_guardia_pasa_y_eventos_exentos(self):
+        e = correr(TRIGGER + "function trabajoDiario() {\n  _assertDisparador('trabajoDiario');\n}\n")
+        self.assertEqual(e[DISPARADORES], "OK")
+
+    def test_lista_de_manejadores_legados_tambien_cuenta(self):
+        e = correr(TRIGGER + "function trabajoDiario() { _assertDisparador('t'); }\n"
+                   "const TRIGGER_HANDLERS = ['weeklyJob', 'noDefinida'];\n"
+                   "function weeklyJob() { return 1; }\n")
+        self.assertEqual(e[DISPARADORES], "FALLA")
+
+
 class ChequeoPrivadas(unittest.TestCase):
     def test_menu_que_apunta_a_privada_falla(self):
         e = correr("function hacer_() { assertAdmin('x'); }\n", manejador="hacer_")

@@ -15,6 +15,7 @@ lunes y el correo no sale. Esto adelanta lo comprobable:
     admin         cada entrada del menú Admin llama assertAdmin() en el servidor
     privadas      nada del cliente, menú o disparador apunta a una función privada (…_)
     diagnóstico   _diag_* y _demo* llaman assertAdmin()
+    disparadores  los manejadores de disparadores llaman _assertDisparador()
     innerHTML     los paneles no concatenan datos sin esc() en innerHTML
     zona horaria  ninguna fecha usa una zona escrita a mano (sale de appsscript.json)
     manifiesto    appsscript.json es válido y declara sus permisos
@@ -395,6 +396,28 @@ def main() -> int:
             f"{len(privadas)} referencias" if privadas else "ninguna")
     for x in privadas[:8]:
         print(f"        · {x}")
+
+    # Manejadores de disparadores: son públicos (un disparador no puede apuntar a
+    # una función privada), así que cualquiera con un panel abierto podría
+    # invocarlos. Deben empezar con _assertDisparador(). Exentos: los de eventos
+    # de edición (necesitan un evento real de Sheets) y autoRefreshDirty (solo
+    # refresca vistas que el equipo ya puede ver).
+    exentos = {"onSheetEdit", "onEvalSheetEdit", "onTaskEdit", "onEvaluationEdit", "autoRefreshDirty"}
+    manejadores_t = set()
+    for f in gs:
+        texto = f.read_text(encoding="utf-8")
+        manejadores_t.update(TRIGGER.findall(texto))
+        m = re.search(r"TRIGGER_HANDLERS\s*=\s*\[([^\]]*)\]", texto)
+        if m:
+            manejadores_t.update(re.findall(r"['\"]([A-Za-z_$][\w$]*)['\"]", m.group(1)))
+    revisables = sorted(fn for fn in manejadores_t - exentos if fn in donde)
+    sin_guardia = [fn for fn in revisables
+                   if "_assertDisparador(" not in (cuerpo_funcion(todo_gs, fn) or "")]
+    revisar("Manejadores de disparadores llaman _assertDisparador()", not sin_guardia,
+            f"{len(sin_guardia)} de {len(revisables)} sin _assertDisparador()" if sin_guardia
+            else f"{len(revisables)} / {len(revisables)}")
+    for fn in sin_guardia[:10]:
+        print(f"        · {fn}()")
 
     # _diag_* y _demo* se corren desde el editor; son públicas, así que cualquiera
     # con un panel abierto podría invocarlas. _demoFechas* sobrescribe fechas.
