@@ -54,7 +54,7 @@ function onOpen() {
     adminMenu.addItem('📨 Enviar relevantes comentados', 'enviarRelevantesDesdeMenu');
     adminMenu.addItem('📋 Enviar evaluaciones calificadas', 'enviarEvaluacionesDesdeMenu');
     adminMenu.addItem('📧 Enviar prueba (a mí)', 'sendTestIndividualToAdmin');
-    adminMenu.addItem('📧 Recordatorio del jueves (ahora)', 'sendThursdayNowFromMenu');
+    adminMenu.addItem('📧 Recordatorio del día de edición (ahora)', 'sendThursdayNowFromMenu');
     adminMenu.addItem('📧 Ejecutivos del viernes (ahora)', 'sendExecNowFromMenu');
     adminMenu.addItem('📧 Enviar bienvenida a TODO el equipo', 'sendWelcomeToAllFromMenu');
     adminMenu.addSeparator();
@@ -80,18 +80,20 @@ function goToResumen() {
   if (sh) getSS().setActiveSheet(sh);
 }
 
-/** Envía el recordatorio del jueves ahora (admin, respeta SANDBOX). */
+/** Envía el recordatorio del día de edición ahora (admin, respeta SANDBOX). */
 function sendThursdayNowFromMenu() {
-  const r = sendThursdayReminders();
-  SpreadsheetApp.getUi().alert('Recordatorio del jueves enviado',
+  assertAdmin('enviar el recordatorio');
+  const r = sendThursdayReminders_();
+  SpreadsheetApp.getUi().alert('Recordatorio enviado',
     'Enviados: ' + r.sent + ' de ' + r.total + (isSandboxMode() ? '\n\n(SANDBOX: los correos van al admin)' : ''),
     SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
 /** Envía los ejecutivos del viernes ahora (admin, respeta SANDBOX). */
 function sendExecNowFromMenu() {
+  assertAdmin('enviar los ejecutivos');
   try { generateSnapshot(); } catch (e) {}
-  const r = sendExecutiveReports();
+  const r = sendExecutiveReports_();
   SpreadsheetApp.getUi().alert('Ejecutivos enviados',
     'Enviados: ' + r.sent + ' de ' + r.total + (isSandboxMode() ? '\n\n(SANDBOX: los correos van al admin)' : ''),
     SpreadsheetApp.getUi().ButtonSet.OK);
@@ -99,6 +101,7 @@ function sendExecNowFromMenu() {
 
 /** Setup 1 vez: config de acceso + columnas PERT + pestañas privadas + reconstruir vistas. */
 function setupMejoras2026FromMenu() {
+  assertAdmin('completar la configuración');
   const res = setupMejoras2026();
   SpreadsheetApp.getUi().alert('Configuración completada',
     'Config acceso: ' + (res.accessAdded.join(', ') || '(ya estaban)') +
@@ -142,23 +145,35 @@ const BASE_TABS = {
 /** Claves de 00_Config que se siembran vacías (o con su valor por defecto) para llenarlas a mano. */
 const BASE_CONFIG = [
   ['SYSTEM_MODE', 'SANDBOX', 'SANDBOX: todos los correos van al admin. PROD: a los destinatarios reales.'],
-  ['ADMIN_EMAIL', '', 'Administrador: recibe errores y muestras. Debe ser quien instala los disparadores.'],
+  ['SANDBOX_REDIRECT_TO', '', 'Opcional: a quién van los correos en SANDBOX. Vacío: a ADMIN_EMAIL.'],
+  ['ADMIN_EMAIL', '', 'Administrador: recibe errores y muestras. Quien instale los disparadores debe estar aquí o en ADMIN_EMAILS.'],
   ['ADMIN_EMAILS', '', 'Otros administradores, separados por coma (opcional).'],
   ['SUPERVISOR_EMAILS', '', 'Editan cualquier día, sin menú Admin. Separados por coma.'],
   ['SUPPORT_EMAIL', '', 'Correo de soporte que aparece en el pie de los correos.'],
   ['EMAIL_DOMAIN', '', 'Dominio admitido al dar de alta una persona (ej. example.org).'],
   ['SENDER_NAME', 'Sistema de Proyectos', 'Remitente visible de los correos.'],
+  ['JEFE_CANAL_ID', '', 'Opcional: person_id del jefe del canal (ejecutivo con detalle y evaluación). Vacío: P001 o rol con «canal».'],
   ['EVAL_SHEET_ID', '', 'ID del Sheet privado de evaluaciones.'],
   ['EVAL_SHEET_URL', '', 'URL del Sheet privado de evaluaciones (para el correo al jefe).'],
   ['CONFIDENCIAL_SHEET_ID', '', 'ID del Sheet privado de jefes (histórico y relevantes).'],
   ['LOGO_FILE_ID', '', 'Opcional: ID en Drive del logo (se usa si _brand_bar.html tiene <img src="cid:logo">).'],
   ['MANUAL_USER_URL', '', 'Opcional: URL del manual de usuario.'],
+  ['SHEET_URL', '', 'Opcional: base de los enlaces de los correos. Vacío: la URL de este Sheet.'],
   ['EDIT_LOCK_ENABLED', 'TRUE', 'TRUE: el equipo solo edita el día EDIT_LOCK_DAY.'],
   ['EDIT_LOCK_DAY', '4', 'Día de edición del equipo: 0=domingo … 4=jueves … 6=sábado.'],
   ['PROJECT_DATES_LOCKED', 'TRUE', 'TRUE: solo admins y supervisores cambian fechas de proyecto.'],
+  ['TASK_RANGE_ENFORCED', 'TRUE', 'TRUE: las tareas deben caer dentro de las fechas de su proyecto.'],
+  ['BLOCKED_REQUIRES_COMMENT', 'TRUE', 'TRUE: una tarea bloqueada solo deja de contar si tiene comentario.'],
+  ['RISK_GAP_THRESHOLD_PTS', '-15', 'Puntos por debajo de lo esperado para marcar un proyecto «En riesgo».'],
+  ['DUE_SOON_DAYS', '7', 'Días antes del fin en que menos del 80 % de avance es «En riesgo».'],
   ['GANTT_DESDE', '', 'Inicio del Cronograma (yyyy-mm-dd). Vacío: semestre en curso.'],
   ['GANTT_HASTA', '', 'Fin del Cronograma (yyyy-mm-dd). Vacío: semestre en curso.'],
-  ['FESTIVOS', '', 'Festivos que se sombrean en el Cronograma: fechas yyyy-mm-dd separadas por coma.']
+  ['FESTIVOS', '', 'Festivos que se sombrean en el Cronograma: fechas yyyy-mm-dd separadas por coma.'],
+  ['MONTHLY_EVAL_DAY', '1', 'Día del mes de la evaluación y el archivo al histórico (mes más corto: el último día).'],
+  ['PERSONAL_EVAL_SEND_DAY', '4', 'Día del mes en que cada persona recibe su evaluación calificada.'],
+  ['RECURRING_TASKS_DAY', '1', 'Día del mes en que se regeneran las tareas recurrentes.'],
+  ['MOTIVATIONAL_ENABLED', 'TRUE', 'TRUE: mensaje de cierre el último día del mes.'],
+  ['SEND_WELCOME_EMAIL', 'TRUE', 'TRUE: correo de bienvenida al agregar una persona.']
 ];
 
 /**
@@ -226,17 +241,20 @@ function openRecurrentesSidebar() { _sidebar('sidebar_recurrentes', '🔁 Tareas
 
 /** Genera las instancias recurrentes del período (botón admin). */
 function generateRecurringFromMenu() {
+  assertAdmin('generar las recurrentes del período');
   const r = generateRecurringTasks();
   SpreadsheetApp.getUi().alert('Tareas recurrentes',
     'Instancias nuevas generadas: ' + r.created + '\nPlantillas activas: ' + r.plantillas,
     SpreadsheetApp.getUi().ButtonSet.OK);
 }
-function openAddPersonSidebar() { _sidebar('sidebar_add_person', '➕ Agregar persona', 360); }
-function openAddProjectSidebar() { _sidebar('sidebar_add_project', '➕ Agregar proyecto', 360); }
-function openEditProjectSidebar() { _sidebar('sidebar_edit_project', '✏️ Editar proyecto', 380); }
-function openArchiveProjectSidebar() { _sidebar('sidebar_archive_project', '🗑️ Archivar proyecto', 360); }
-function openAddTaskSidebar() { _sidebar('sidebar_add_task', '➕ Agregar tarea', 380); }
-function openEditTaskSidebar() { _sidebar('sidebar_edit_task', '✏️ Editar tarea', 380); }
+function openAddPersonSidebar() {
+  assertAdmin('agregar personas');
+  _sidebar('sidebar_add_person', '➕ Agregar persona', 360);
+}
+function openAddProjectSidebar() {
+  assertAdmin('crear proyectos desde el menú Admin');
+  _sidebar('sidebar_add_project', '➕ Agregar proyecto', 360);
+}
 
 /** El editor de proyecto va como VENTANA GRANDE (diálogo), no panel chico. */
 function openProjectManagerSidebar() {
@@ -251,6 +269,7 @@ function openRelevanteSidebar() { _sidebar('sidebar_relevante', '📝 Crear rele
  *  DIÁLOGO — Inactivar persona
  * ============================================================================ */
 function openInactivatePersonDialog() {
+  assertAdmin('inactivar personas');
   const personas = getActivePersons();
   if (personas.length === 0) {
     SpreadsheetApp.getUi().alert('No hay personas activas.');
@@ -280,7 +299,7 @@ function openInactivatePersonDialog() {
  * ============================================================================ */
 function switchToSandbox() {
   assertAdmin('cambiar el modo del sistema');
-  setConfigValue('SYSTEM_MODE', 'SANDBOX');
+  setConfigValue_('SYSTEM_MODE', 'SANDBOX');
   SpreadsheetApp.getUi().alert('Sistema en modo SANDBOX. Los correos se redirigen al admin.');
 }
 function switchToProd() {
@@ -295,14 +314,15 @@ function switchToProd() {
     'Los correos se enviarán a destinatarios REALES. ¿Confirmas?',
     ui.ButtonSet.YES_NO);
   if (r !== ui.Button.YES) return;
-  setConfigValue('SYSTEM_MODE', 'PROD');
-  ui.alert('Sistema en modo PROD. Próximo envío automático: lunes 8:30 AM.');
+  setConfigValue_('SYSTEM_MODE', 'PROD');
+  ui.alert('Sistema en modo PROD. Los correos salen a los destinatarios reales desde el próximo ' +
+    'disparador (recordatorio: ' + _ctxDiaEdicion().dia_edicion + ' 8:30; ejecutivo: viernes 8:30).');
 }
 
 /**
  * Modifica un valor en 00_Config.
  */
-function setConfigValue(key, value) {
+function setConfigValue_(key, value) {
   const data = readSheetAsObjects(SHEET_NAMES.CONFIG);
   const row = data.rows.find(r => r.clave === key);
   if (row) {
@@ -317,6 +337,7 @@ function setConfigValue(key, value) {
  *  ESTADO DEL SISTEMA
  * ============================================================================ */
 function showSystemStatus() {
+  assertAdmin('ver el estado del sistema');
   const mode = getConfig('SYSTEM_MODE') || 'SANDBOX';
   const log = readSheetAsObjects(SHEET_NAMES.EMAIL_LOG).rows;
   const lastSent = log.filter(r => r.status === 'OK').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
@@ -339,24 +360,6 @@ function showSystemStatus() {
     'Proyectos activos (no archivados, no cerrados): ' + activeProjects
   ].join('\n');
   SpreadsheetApp.getUi().alert('Estado del sistema', msg, SpreadsheetApp.getUi().ButtonSet.OK);
-}
-
-/* ============================================================================
- *  ENVIAR PRODUCCIÓN ahora (confirmación doble)
- * ============================================================================ */
-function sendProductionNowConfirm() {
-  const ui = SpreadsheetApp.getUi();
-  if (isSandboxMode()) {
-    ui.alert('Estás en modo SANDBOX. Los correos se redirigirán al admin. Para enviar a destinatarios reales, cambia a modo PROD primero.');
-  }
-  const r = ui.alert('Enviar reportes ahora',
-    '¿Disparar el job semanal completo ahora? (snapshot + correos individuales + ejecutivos)',
-    ui.ButtonSet.YES_NO);
-  if (r !== ui.Button.YES) return;
-  const result = weeklyJob();
-  ui.alert('Envío completado',
-    'Individuales: ' + result.individuales + '\nEjecutivos: ' + result.ejecutivos,
-    ui.ButtonSet.OK);
 }
 
 /* ============================================================================

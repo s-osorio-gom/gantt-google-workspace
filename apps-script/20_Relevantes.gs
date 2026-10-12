@@ -2,7 +2,7 @@
  * 20_Relevantes.gs — "Relevantes" semanales.
  *
  * Flujo:
- *  1) Cada persona (reglas del jueves) abre el botón "Crear relevante", escoge persona + proyecto
+ *  1) Cada persona (reglas del día de edición) abre el botón "Crear relevante", escoge persona + proyecto
  *     (o "Otro") y escribe un comentario. Se guarda en un STAGING oculto de la hoja principal
  *     (_Relevantes_IN) — porque el sidebar corre como el usuario, que NO tiene acceso al Sheet privado.
  *  2) Un proceso del DUEÑO (autoRefreshDirty, 1 min) sincroniza el staging → Sheet privado
@@ -36,7 +36,7 @@ function getRelevanteFormData() {
   };
 }
 
-/** Crea un relevante (corre como el usuario). Reglas del jueves. Va al staging. */
+/** Crea un relevante (corre como el usuario). Reglas del día de edición. Va al staging. */
 function addRelevante(payload) {
   assertCanEditNow();
   if (!payload || !payload.person_id) throw new Error('Falta la persona.');
@@ -82,17 +82,21 @@ function syncRelevantesToConfid() {
 }
 
 /** DUEÑO: envía a cada persona sus relevantes YA comentados por el jefe operativo y no enviados. */
-function enviarRelevantesComentados() {
+function enviarRelevantesComentados_() {
   let confid;
   try { confid = getConfidSS(); } catch (e) { return { sent: 0, error: e.message }; }
+  const sandbox = isSandboxMode();
   const rows = readSheetObjectsFrom(confid, 'Relevantes')
-    .filter(r => String(r.comentario_lider || '').trim() !== '' && !toBool(r.enviado));
+    .filter(r => String(r.comentario_lider || '').trim() !== '' && _relevantePendiente(r.enviado, sandbox));
   if (!rows.length) return { sent: 0 };
   // agrupar por persona
   const byPerson = {};
   rows.forEach(r => { (byPerson[r.person_id] = byPerson[r.person_id] || []).push(r); });
   const rel = confid.getSheetByName('Relevantes');
   const colMap = {}; REL_HEADERS.forEach((h, i) => colMap[h] = i + 1);
+  // En SANDBOX el correo va al admin y la fila queda enviado='SANDBOX' (no se le
+  // reenvía al admin cada sábado). Esa marca no impide PROD: el comentario del
+  // jefe le llega a la persona en el primer envío real. PROD marca TRUE.
   let sent = 0;
   Object.keys(byPerson).forEach(pid => {
     const person = getPersonById(pid);
@@ -107,16 +111,24 @@ function enviarRelevantesComentados() {
       support_email: getConfig('SUPPORT_EMAIL') || 'admin@example.com'
     };
     const html = renderTemplate('email_relevantes', ctx);
-    const res = sendEmailGTM({
-      eventType: 'relevantes_feedback', period: getWeekId(today()) + '-' + pid,
+    const res = sendEmailGTM_({
+      // Huella del contenido del lote, sin semana ni número de fila: si el correo
+      // sale pero falla la marca, ningún reintento posterior (otro sábado, filas
+      // reordenadas) lo repite; un relevante o comentario nuevo cambia la huella.
+      eventType: 'relevantes_feedback',
+      period: 'rel-' + pid + '#' + _huella(byPerson[pid].map(r => [
+        r.timestamp instanceof Date ? r.timestamp.getTime() : String(r.timestamp || ''),
+        String(r.relevante || '').trim(), String(r.comentario_lider || '').trim()].join('|')).sort().join('§')),
       realToEmail: person.email, realToName: person.nombre,
-      subject: 'Comentarios a tus relevantes de la semana', htmlBody: html, allowDuplicate: true
+      subject: 'Comentarios a tus relevantes de la semana', htmlBody: html
     });
     if (res.ok) {
-      byPerson[pid].forEach(r => {
-        rel.getRange(r._rowIndex, colMap['enviado']).setValue('TRUE');
-        rel.getRange(r._rowIndex, colMap['fecha_comentario']).setValue(fmtDateHuman(today()));
-      });
+      try {
+        byPerson[pid].forEach(r => {
+          rel.getRange(r._rowIndex, colMap['enviado']).setValue(sandbox ? 'SANDBOX' : 'TRUE');
+          rel.getRange(r._rowIndex, colMap['fecha_comentario']).setValue(fmtDateHuman(today()));
+        });
+      } catch (e) { logError('relevantes: no se pudo marcar enviado de ' + pid + ': ' + e.message); }
       sent++;
     }
   });
@@ -125,10 +137,21 @@ function enviarRelevantesComentados() {
 }
 
 /**
+ * ¿Falta enviar este relevante? En SANDBOX: si `enviado` está vacío o FALSE (ya
+ * marcado SANDBOX no se repite). En PROD: si no es TRUE, incluido SANDBOX — lo
+ * enviado al admin durante las pruebas no consume el envío real (criterio C7).
+ */
+function _relevantePendiente(enviado, sandbox) {
+  const m = String(enviado === null || enviado === undefined ? '' : enviado).trim().toUpperCase();
+  return sandbox ? (m === '' || m === 'FALSE') : m !== 'TRUE';
+}
+
+/**
  * PRUEBA end-to-end del ciclo de relevantes: crea uno para el admin, lo sincroniza al privado,
  * simula el comentario del jefe operativo y lo envía. Devuelve el resultado del envío.
  */
 function _diag_pruebaRelevanteCompleto() {
+  assertAdmin('usar la función de diagnóstico _diag_pruebaRelevanteCompleto');
   const admin = getActivePersons().find(p => String(p.email).toLowerCase() === String(getConfig('ADMIN_EMAIL') || '').toLowerCase())
              || getPersonById('P006') || getActivePersons()[0];
   const proj = getActiveProjectsForUI()[0];
@@ -143,13 +166,15 @@ function _diag_pruebaRelevanteCompleto() {
     rel.getRange(pend[pend.length - 1]._rowIndex, colMap['comentario_lider'])
        .setValue('Excelente avance. Coordina la firma para el viernes. — el jefe operativo');
   }
-  return enviarRelevantesComentados();
+  return enviarRelevantesComentados_();
 }
 
 /** Atajo admin/el jefe operativo desde menú. */
 function enviarRelevantesDesdeMenu() {
-  const r = enviarRelevantesComentados();
+  assertAdmin('enviar los relevantes comentados');
+  const r = enviarRelevantesComentados_();
   SpreadsheetApp.getUi().alert('Relevantes comentados',
     'Enviados a ' + (r.sent || 0) + ' persona(s)' + (r.error ? ('\n\n' + r.error) : '') +
-    (isSandboxMode() ? '\n\n(SANDBOX: van al admin)' : ''), SpreadsheetApp.getUi().ButtonSet.OK);
+    (isSandboxMode() ? '\n\n(SANDBOX: van al admin y quedan marcados enviado=SANDBOX; en PROD le llegan a cada persona)' : ''),
+    SpreadsheetApp.getUi().ButtonSet.OK);
 }

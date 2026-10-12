@@ -80,7 +80,8 @@ fechas de todo el sistema y la hora de los disparadores.
 
 Recargue el Sheet. Aparece el menú **🍀 EQUIPO** con una sola opción:
 `🧱 Crear pestañas base`. Crea las que falten con sus encabezados y siembra
-`00_Config` con todas las claves y su descripción. No toca pestañas que ya
+`00_Config` con todas las claves que el código lee, con su valor por defecto y
+su descripción (salvo `RECURRING_PROJECT_ID`, que escribe el sistema). No toca pestañas que ya
 existan. (También se puede correr `crearPestanasBase` desde el editor de Apps
 Script.)
 
@@ -109,7 +110,7 @@ Obligatorias para arrancar:
 | Clave | Ejemplo | Qué hace |
 |---|---|---|
 | `SYSTEM_MODE` | `SANDBOX` | En SANDBOX **todos** los correos van a `SANDBOX_REDIRECT_TO` o, si está vacía, a `ADMIN_EMAIL` |
-| `ADMIN_EMAIL` | `admin@example.org` | Administrador. Recibe errores y muestras. **Debe ser la cuenta que instala los disparadores** |
+| `ADMIN_EMAIL` | `admin@example.org` | Administrador. Recibe errores y muestras. **Quien instala los disparadores debe estar aquí o en `ADMIN_EMAILS`** (recomendado: esta cuenta) |
 | `EMAIL_DOMAIN` | `example.org` | Dominio admitido al dar de alta una persona |
 | `SUPPORT_EMAIL` | `admin@example.org` | Pie de los correos |
 | `EVAL_SHEET_ID` | `1AbC…` | El Sheet **privado** de evaluaciones |
@@ -120,6 +121,7 @@ Opcionales:
 | Clave | Por defecto | Qué hace |
 |---|---|---|
 | `ADMIN_EMAILS` | — | Más administradores, separados por coma |
+| `JEFE_CANAL_ID` | P001 o rol con «canal» | `person_id` del jefe del canal: recibe el ejecutivo con detalle y califica la evaluación |
 | `SUPERVISOR_EMAILS` | — | Editan cualquier día, sin menú Admin |
 | `SANDBOX_REDIRECT_TO` | `ADMIN_EMAIL` | A quién van los correos en SANDBOX |
 | `SENDER_NAME` | `Sistema de Proyectos` | Remitente visible |
@@ -128,15 +130,15 @@ Opcionales:
 | `MANUAL_USER_URL` | — | Manual que abre `Abrir manual de usuario` (http/https) |
 | `LOGO_FILE_ID` | — | Logo en Drive; ver «Logo» abajo |
 | `EDIT_LOCK_ENABLED` | `TRUE` | El equipo solo edita el día `EDIT_LOCK_DAY` |
-| `EDIT_LOCK_DAY` | `4` | 0 = domingo … 4 = jueves … 6 = sábado |
+| `EDIT_LOCK_DAY` | `4` | 0 = domingo … 4 = jueves … 6 = sábado. El recordatorio sale ese día; si lo cambia, reinstale los disparadores |
 | `PROJECT_DATES_LOCKED` | `TRUE` | Solo admins y supervisores cambian fechas de proyecto |
 | `TASK_RANGE_ENFORCED` | `TRUE` | Las tareas deben caer dentro de las fechas de su proyecto |
 | `BLOCKED_REQUIRES_COMMENT` | `TRUE` | Una tarea bloqueada solo deja de contar si tiene comentario |
 | `RISK_GAP_THRESHOLD_PTS` | `-15` | Puntos por debajo de lo esperado para marcar «En riesgo» |
 | `DUE_SOON_DAYS` | `7` | Días antes del fin en que < 80 % de avance es «En riesgo» |
 | `GANTT_DESDE`, `GANTT_HASTA` | semestre en curso | Ventana del Cronograma (`yyyy-mm-dd`, máximo 2 años) |
-| `FESTIVOS` | — | Fechas `yyyy-mm-dd` separadas por coma que el Cronograma sombrea |
-| `MONTHLY_EVAL_DAY` | `1` | Día del mes de la evaluación y el archivo al histórico |
+| `FESTIVOS` | — | Fechas `yyyy-mm-dd` separadas por coma que el Cronograma sombrea; lo que no sea una fecha completa se ignora y `99_Validaciones` lo avisa |
+| `MONTHLY_EVAL_DAY` | `1` | Día del mes de la evaluación y el archivo al histórico (si el mes es más corto, el último día; fuera de 1–31 o vacío, el valor por defecto; igual para los dos siguientes) |
 | `PERSONAL_EVAL_SEND_DAY` | `4` | Día del mes en que cada persona recibe su evaluación |
 | `RECURRING_TASKS_DAY` | `1` | Día del mes en que se regeneran las recurrentes |
 | `MOTIVATIONAL_ENABLED` | `TRUE` | Mensaje del último día del mes |
@@ -150,9 +152,17 @@ quiera en `apps-script/_brand_bar.html` (que también lleva el nombre de la
 organización). Si la plantilla no usa `cid:logo`, la imagen no se adjunta.
 
 Recargue el Sheet. Si su correo está en `ADMIN_EMAIL`, aparece el submenú
-**⚙️ Admin**. Corra `⚙️ Completar configuración (1 vez)`: agrega columnas
-PERT, crea las pestañas del Sheet de jefes y el proyecto contenedor de
-recurrentes, y reconstruye las vistas.
+**⚙️ Admin**.
+
+Agréguese como persona: `Admin → 👥 Agregar persona`, con el mismo correo de
+`ADMIN_EMAIL`. El proyecto contenedor de recurrentes necesita un responsable;
+si todavía no hay nadie en `01_Personas`, el paso siguiente no lo crea y lo
+dice en el resumen («Proyecto de recurrentes: error: Cargue al menos una
+persona…»).
+
+Corra `⚙️ Completar configuración (1 vez)`: agrega columnas PERT, crea las
+pestañas del Sheet de jefes y el proyecto contenedor de recurrentes (a nombre
+del admin), y reconstruye las vistas. Se puede repetir sin riesgo.
 
 Recomendado: proteja la hoja `00_Config` (`Datos → Proteger hojas y rangos`)
 para que solo los administradores la editen. El menú Admin se oculta y el
@@ -162,7 +172,7 @@ escriben ahí con la cuenta de quien los usa.
 
 ## 5 · Cargar el equipo
 
-Desde el menú, `Admin → Agregar persona`. O, para sembrar un equipo completo de
+Desde el menú, `Admin → Agregar persona`, para el resto del equipo. O, para sembrar un equipo completo de
 una vez, edite `_reorgPersonas()` y `_reorgProyectos()` en `14_Reorg.gs` (traen
 un equipo ficticio de molde) y corra `Admin → Reorganizar equipo y proyectos`.
 Ese comando **reescribe** `01_Personas`, `02_Proyectos` y `03_Tareas`; antes
@@ -170,20 +180,33 @@ deja una copia oculta de cada una con fecha.
 
 La jerarquía se arma con banderas en `01_Personas`:
 
-- `recibe_reporte=TRUE`: recibe recordatorios y entra en la evaluación mensual.
+- `recibe_recordatorio_domingo=TRUE`: recibe el recordatorio del día de
+  edición (el nombre de la columna es heredado).
+- `recibe_reporte=TRUE`: entra en la evaluación mensual.
 - `recibe_reporte_jefe=TRUE`: recibe el correo ejecutivo del viernes.
 - Entre quienes reciben el ejecutivo, el **jefe del canal** —el que recibe la
-  versión con detalle por persona y califica— es `P001` o quien tenga un rol
-  que contenga «canal». Los demás reciben la versión del jefe operativo.
+  versión con detalle por persona y califica— es el `person_id` de
+  `JEFE_CANAL_ID`. Si la deja vacía: `P001` o quien tenga un rol que contenga
+  «canal». Los demás reciben la versión del jefe operativo. Si nadie cumple,
+  `99_Validaciones` lo avisa y el día 1 el admin recibe un correo de error en
+  lugar de la evaluación.
 
 ## 6 · Instalar los disparadores
 
-Desde el menú, `Admin → ⏰ Instalar / reinstalar disparadores`, **con la cuenta
-de `ADMIN_EMAIL`**: los disparadores corren y envían correo como quien los
-instala. Quedan ocho (siete si `EVAL_SHEET_ID` no es accesible); la lista está
+Desde el menú, `Admin → ⏰ Instalar / reinstalar disparadores`, **con una
+cuenta que esté en `ADMIN_EMAIL` o `ADMIN_EMAILS`** (recomendado: la de
+`ADMIN_EMAIL`, que recibe las alertas): los disparadores corren y envían correo
+como quien los instala, y cada uno comprueba al arrancar que esa cuenta siga
+siendo admin. Quedan ocho (siete si `EVAL_SHEET_ID` no es accesible); la lista está
 en el [README](../README.md#qué-hace-en-concreto).
 
 Verifique en `Activadores` del editor de Apps Script que estén todos.
+
+El recordatorio se programa el día `EDIT_LOCK_DAY` (jueves por defecto; el
+manejador se sigue llamando `thursdayReminderJob`). Si cambia ese día después,
+vuelva a `Instalar / reinstalar disparadores`: mientras no lo haga, el
+recordatorio no sale y el admin recibe un aviso cada vez que el disparador
+corre en el día viejo.
 
 ## 7 · Una semana en SANDBOX
 
@@ -216,7 +239,9 @@ Cuando los tres estén bien, `Admin → Modo PROD`. No deja pasar si
 | No aparece el menú Admin | Su correo no está en `ADMIN_EMAIL`/`ADMIN_EMAILS`, o Google no lo revela (cuenta de otro dominio). |
 | No llega ningún correo | `SYSTEM_MODE` sigue en `SANDBOX`, o `99_Validaciones` está bloqueando. |
 | Llegan dos correos iguales | Hay disparadores duplicados, quizá instalados por dos cuentas. Bórrelos y reinstale desde el menú con `ADMIN_EMAIL`. |
-| «No se encontró jefe del canal» | Nadie con `recibe_reporte_jefe=TRUE` es `P001` ni tiene «canal» en el rol. |
+| «No se encontró jefe del canal» | Nadie con `recibe_reporte_jefe=TRUE` es `JEFE_CANAL_ID` (o, vacía, `P001` / rol con «canal»). |
 | Falla al leer un Sheet privado | `EVAL_SHEET_ID` o `CONFIDENCIAL_SHEET_ID` vacío, o el archivo no está compartido con quien ejecuta. |
 | «Solo puedes actualizar los jueves» | Bloqueo por día (`EDIT_LOCK_*`). Admins y supervisores están exentos. |
+| Un disparador falla con «Solo un administrador puede ejecutar …» | Quien instaló los disparadores ya no está en `ADMIN_EMAIL` ni en `ADMIN_EMAILS`. Reinstálelos con una cuenta admin. |
+| «Enviadas: 0 … ya se habían enviado con el mismo contenido» | Devolvió una evaluación a `LISTO` sin cambiarla. No se reenvía (sería un duplicado); para reenviarla, cambie su comentario o su calificación. |
 | Error de permisos al instalar | La organización bloquea alcances de OAuth. Es cosa de TI, no del código. |

@@ -57,7 +57,7 @@ function updateMyWeeklyComment(text) {
  * Llamado después de enviar los correos del lunes (para que la próxima semana empiece vacío).
  * Antes de borrar, guarda el comentario en el snapshot del día.
  */
-function clearWeeklyComments() {
+function clearWeeklyComments_() {
   const personas = getActivePersons();
   let cleared = 0;
   personas.forEach(p => {

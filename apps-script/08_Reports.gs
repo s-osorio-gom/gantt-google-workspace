@@ -2,7 +2,7 @@
  * Reports.gs — generación y envío de los correos del sistema.
  *
  * Correos cubiertos:
- *   1. Recordatorio del jueves (thursdayReminderJob, jueves 8:30)
+ *   1. Recordatorio del día de edición (thursdayReminderJob, EDIT_LOCK_DAY 8:30)
  *   2. Ejecutivo jefe operativo / jefe del canal (fridayExecJob, viernes 8:30)
  *   3. Bienvenida (al dar de alta una persona, o a todos desde el menú)
  *   4. Individual semanal y recordatorio dominical (weeklyJob / sundayReminderJob):
@@ -31,19 +31,23 @@ function renderTemplate(templateName, vars) {
   return tpl.evaluate().getContent();
 }
 
+/** Filas de 08_Email_Log leídas en esta ejecución (anti-duplicado); null = sin leer. */
+let _cacheEmailLog = null;
+
 /**
  * Envía un correo respetando modo SANDBOX, registra en log, evita duplicados.
  */
-function sendEmailGTM(opts) {
+function sendEmailGTM_(opts) {
   // opts: { eventType, period, realToEmail, realToName, subject, htmlBody, allowDuplicate }
   const mode = isSandboxMode() ? 'SANDBOX' : 'PROD';
   const finalTo = resolveRecipient(opts.realToEmail);
   const subject = subjectPrefix() + opts.subject;
 
-  // Evitar duplicados
+  // Evitar duplicados. El log se lee una vez por ejecución (no una por correo:
+  // un envío masivo releía entero un log que solo crece).
   if (!opts.allowDuplicate) {
-    const log = readSheetAsObjects(SHEET_NAMES.EMAIL_LOG).rows;
-    const dup = log.find(r => r.event_type === opts.eventType &&
+    if (!_cacheEmailLog) _cacheEmailLog = readSheetAsObjects(SHEET_NAMES.EMAIL_LOG).rows;
+    const dup = _cacheEmailLog.find(r => r.event_type === opts.eventType &&
                               logPeriodKey(r.period) === String(opts.period) &&
                               r.destinatario_email === opts.realToEmail &&
                               r.status === 'OK' &&
@@ -68,6 +72,8 @@ function sendEmailGTM(opts) {
   try {
     MailApp.sendEmail(finalTo, subject, '', mailOpts);
     logEvent(opts.eventType, opts.period, opts.realToEmail, opts.realToName, subject, 'OK', mode, '');
+    if (_cacheEmailLog) _cacheEmailLog.push({ event_type: opts.eventType, period: opts.period,
+      destinatario_email: opts.realToEmail, status: 'OK', mode: mode });
     return { ok: true };
   } catch (e) {
     logEvent(opts.eventType, opts.period, opts.realToEmail, opts.realToName, subject, 'FAIL', mode, e.message);
@@ -171,13 +177,13 @@ function buildIndividualContext(personId, todayDate) {
 /**
  * Envía correo individual a una persona.
  */
-function sendIndividualReport(personId, todayDate) {
+function sendIndividualReport_(personId, todayDate) {
   const person = getPersonById(personId);
   if (!person || !toBool(person.activo) || !toBool(person.recibe_reporte)) return { ok: false, skipped: true };
 
   const ctx = buildIndividualContext(personId, todayDate);
   const html = renderTemplate('email_individual', ctx);
-  const result = sendEmailGTM({
+  const result = sendEmailGTM_({
     eventType: 'weekly_individual',
     period: getWeekId(todayDate),
     realToEmail: person.email,
@@ -385,19 +391,19 @@ function buildAttentionReason(m) {
  * Envía correo ejecutivo a quienes tengan recibe_reporte_jefe=TRUE.
  * includeRanking=true paral jefe del canal (jefe del canal).
  */
-function sendExecutiveReports(todayDate) {
+function sendExecutiveReports_(todayDate) {
   if (!todayDate) todayDate = today();
   const jefes = getActivePersons().filter(p => toBool(p.recibe_reporte_jefe));
   const period = getWeekId(todayDate);
   let sent = 0;
   jefes.forEach(jefe => {
-    const isTopBoss = jefe.person_id === 'P001' || (jefe.rol || '').toLowerCase().indexOf('canal') >= 0;
+    const isTopBoss = esJefeCanal(jefe);
     const ctx = buildExecutiveContext(todayDate, isTopBoss);
     ctx.nombre_corto = jefe.nombre.split(' ')[0];
     ctx.is_jefe = isTopBoss;
     const tplName = isTopBoss ? 'email_exec_jefe' : 'email_exec_lider';
     const html = renderTemplate(tplName, ctx);
-    const result = sendEmailGTM({
+    const result = sendEmailGTM_({
       eventType: isTopBoss ? 'weekly_exec_jefe' : 'weekly_exec_lider',
       period: period,
       realToEmail: jefe.email,
@@ -413,20 +419,20 @@ function sendExecutiveReports(todayDate) {
 /* ============================================================================
  *  CORREO 4 — Bienvenida
  * ============================================================================ */
-function sendWelcomeEmail(personId) {
+function sendWelcomeEmail_(personId) {
   const person = getPersonById(personId);
   if (!person) throw new Error('No existe persona ' + personId);
 
-  const ctx = {
+  const ctx = Object.assign(_ctxDiaEdicion(), {
     nombre_corto: person.nombre.split(' ')[0],
     nombre: person.nombre,
     rol: person.rol,
     link_sheet: urlToSheet(SHEET_NAMES.INICIO),
     link_manual: getConfig('MANUAL_USER_URL') || urlToSheet(SHEET_NAMES.INICIO),
     support_email: getConfig('SUPPORT_EMAIL') || 'admin@example.com'
-  };
+  });
   const html = renderTemplate('email_bienvenida', ctx);
-  return sendEmailGTM({
+  return sendEmailGTM_({
     eventType: 'welcome',
     period: getMonthId(),
     realToEmail: person.email,
@@ -453,7 +459,7 @@ function sendWelcomeToAll() {
 
     personas.forEach(p => {
       try {
-        const result = sendWelcomeEmail(p.person_id);
+        const result = sendWelcomeEmail_(p.person_id);
         if (result && result.ok) {
           sent++;
           details.push('OK  → ' + p.nombre + ' (' + p.email + ')');
@@ -479,6 +485,7 @@ function sendWelcomeToAll() {
  * Atajo desde menu: envía bienvenida a todos con confirmación y reporte.
  */
 function sendWelcomeToAllFromMenu() {
+  assertAdmin('enviar la bienvenida a todo el equipo');
   const ui = SpreadsheetApp.getUi();
   const personas = getActivePersons();
   const mode = isSandboxMode() ? 'SANDBOX (correos van al admin)' : 'PROD (correos van a destinatarios REALES)';
@@ -504,7 +511,7 @@ function sendWelcomeToAllFromMenu() {
 /* ============================================================================
  *  CORREO 6 — Recordatorio dominical
  * ============================================================================ */
-function sendRecordatorios(todayDate) {
+function sendRecordatorios_(todayDate) {
   if (!todayDate) todayDate = today();
   const personas = getActivePersons().filter(p =>
     toBool(p.recibe_recordatorio_domingo) &&
@@ -518,7 +525,7 @@ function sendRecordatorios(todayDate) {
     // la plantilla lanzaba ReferenceError y no salía ningún recordatorio.
     const ctx = buildThursdayContext(p.person_id, todayDate);
     const html = renderTemplate('email_recordatorio', ctx);
-    const result = sendEmailGTM({
+    const result = sendEmailGTM_({
       eventType: 'sunday_reminder',
       period: period,
       realToEmail: p.email,
@@ -535,6 +542,7 @@ function sendRecordatorios(todayDate) {
  *  Job semanal completo
  * ============================================================================ */
 function weeklyJob() {
+  _assertDisparador('weeklyJob');
   return withErrorAlert(() => withLock(() => {
     logInfo('=== weeklyJob START ===');
 
@@ -550,15 +558,15 @@ function weeklyJob() {
     // Enviar individuales
     let indivSent = 0;
     getActivePersons().filter(p => toBool(p.recibe_reporte)).forEach(p => {
-      const r = sendIndividualReport(p.person_id);
+      const r = sendIndividualReport_(p.person_id);
       if (r.ok) indivSent++;
     });
 
     // Enviar ejecutivos
-    const exec = sendExecutiveReports();
+    const exec = sendExecutiveReports_();
 
     // Limpiar comentarios semanales para que la siguiente semana arranque vacío
-    try { clearWeeklyComments(); } catch (e) { logWarn('clearWeeklyComments fail: ' + e.message); }
+    try { clearWeeklyComments_(); } catch (e) { logWarn('clearWeeklyComments_ fail: ' + e.message); }
 
     logInfo('=== weeklyJob OK individuales=' + indivSent + ' ejecutivos=' + exec.sent + ' ===');
     return { individuales: indivSent, ejecutivos: exec.sent };
@@ -566,7 +574,8 @@ function weeklyJob() {
 }
 
 function sundayReminderJob() {
-  return withErrorAlert(() => sendRecordatorios(), 'sundayReminderJob');
+  _assertDisparador('sundayReminderJob');
+  return withErrorAlert(() => sendRecordatorios_(), 'sundayReminderJob');
 }
 
 /* ============================================================================
@@ -591,7 +600,7 @@ function buildThursdayContext(personId, todayDate) {
     };
   }).sort((a, b) => a._sort - b._sort);
 
-  return {
+  return Object.assign(_ctxDiaEdicion(), {
     nombre_corto: person.nombre.split(' ')[0],
     nombre: person.nombre,
     today_display: fmtDateHuman(todayDate),
@@ -602,11 +611,11 @@ function buildThursdayContext(personId, todayDate) {
     proximas: pend.filter(t => !t.vencida),
     link_tasks: urlToSheet('Proyectos y Tareas'),
     support_email: getConfig('SUPPORT_EMAIL') || 'admin@example.com'
-  };
+  });
 }
 
-/** Envía el recordatorio del jueves a cada persona del equipo con proyectos abiertos. */
-function sendThursdayReminders(todayDate) {
+/** Envía el recordatorio del día de edición a cada persona del equipo con proyectos abiertos. */
+function sendThursdayReminders_(todayDate) {
   if (!todayDate) todayDate = today();
   const personas = getActivePersons().filter(p =>
     toBool(p.recibe_recordatorio_domingo) &&
@@ -617,17 +626,17 @@ function sendThursdayReminders(todayDate) {
   personas.forEach(p => {
     const ctx = buildThursdayContext(p.person_id, todayDate);
     const html = renderTemplate('email_recordatorio', ctx);
-    const r = sendEmailGTM({
+    const r = sendEmailGTM_({
       eventType: 'thursday_reminder',
       period: period,
       realToEmail: p.email,
       realToName: p.nombre,
-      subject: 'Actualiza tus proyectos hoy — plazo jueves 11:59 pm',
+      subject: 'Actualiza tus proyectos hoy — plazo ' + _ctxDiaEdicion().dia_edicion + ' 11:59 pm',
       htmlBody: html
     });
     if (r.ok) sent++;
   });
-  logInfo('Recordatorios jueves: ' + sent + '/' + personas.length);
+  logInfo('Recordatorios del día de edición: ' + sent + '/' + personas.length);
   return { sent: sent, total: personas.length };
 }
 
@@ -635,19 +644,20 @@ function sendThursdayReminders(todayDate) {
  *  Atajos desde menú UI
  * ============================================================================ */
 function sendTestIndividualToAdmin() {
-  // Envía el recordatorio del jueves de una persona de muestra, redirigido al admin.
+  assertAdmin('enviar el correo de prueba');
+  // Envía el recordatorio del día de edición de una persona de muestra, redirigido al admin.
   const admin = getConfig('ADMIN_EMAIL');
   const sample = getActivePersons().find(p => toBool(p.recibe_recordatorio_domingo) && getProjectsForOwner(p.person_id).length > 0)
               || getActivePersons().find(p => toBool(p.recibe_reporte));
   if (!sample) { SpreadsheetApp.getUi().alert('No hay persona de muestra con proyectos.'); return; }
   const ctx = buildThursdayContext(sample.person_id);
   const html = renderTemplate('email_recordatorio', ctx);
-  sendEmailGTM({
+  sendEmailGTM_({
     eventType: 'test_reminder',
     period: 'test-' + new Date().getTime(),
     realToEmail: admin,
     realToName: 'Admin',
-    subject: '[PRUEBA] Recordatorio del jueves · ' + sample.nombre,
+    subject: '[PRUEBA] Recordatorio del ' + _ctxDiaEdicion().dia_edicion + ' · ' + sample.nombre,
     htmlBody: html,
     allowDuplicate: true
   });
@@ -656,23 +666,25 @@ function sendTestIndividualToAdmin() {
 
 /** Envía muestras de los 3 correos al admin (SANDBOX), evitando el anti-duplicado. */
 function _diag_sendSamplesToAdmin() {
+  assertAdmin('usar la función de diagnóstico _diag_sendSamplesToAdmin');
   const admin = getConfig('ADMIN_EMAIL') || 'admin@example.com';
   const person = getActivePersons().find(p => toBool(p.recibe_recordatorio_domingo) && getProjectsForOwner(p.person_id).length > 0)
               || getActivePersons()[0];
   const stamp = Date.now();
-  sendEmailGTM({ eventType: 'sample_thursday', period: 'sample-' + stamp, realToEmail: admin, realToName: 'Admin',
-    subject: '[MUESTRA] Recordatorio del jueves', htmlBody: renderTemplate('email_recordatorio', buildThursdayContext(person.person_id)), allowDuplicate: true });
+  sendEmailGTM_({ eventType: 'sample_thursday', period: 'sample-' + stamp, realToEmail: admin, realToName: 'Admin',
+    subject: '[MUESTRA] Recordatorio del ' + _ctxDiaEdicion().dia_edicion, htmlBody: renderTemplate('email_recordatorio', buildThursdayContext(person.person_id)), allowDuplicate: true });
   const ctxG = buildExecutiveContext(today(), false); ctxG.nombre_corto = 'el jefe operativo'; ctxG.is_jefe = false;
-  sendEmailGTM({ eventType: 'sample_lider', period: 'sample-' + stamp, realToEmail: admin, realToName: 'Admin',
+  sendEmailGTM_({ eventType: 'sample_lider', period: 'sample-' + stamp, realToEmail: admin, realToName: 'Admin',
     subject: '[MUESTRA] Ejecutivo — el jefe operativo', htmlBody: renderTemplate('email_exec_lider', ctxG), allowDuplicate: true });
   const ctxN = buildExecutiveContext(today(), true); ctxN.nombre_corto = 'Jefe'; ctxN.is_jefe = true;
-  sendEmailGTM({ eventType: 'sample_jefe', period: 'sample-' + stamp, realToEmail: admin, realToName: 'Admin',
+  sendEmailGTM_({ eventType: 'sample_jefe', period: 'sample-' + stamp, realToEmail: admin, realToName: 'Admin',
     subject: '[MUESTRA] Ejecutivo — jefe del canal', htmlBody: renderTemplate('email_exec_jefe', ctxN), allowDuplicate: true });
   return { sent: 3, to: admin };
 }
 
 /** Diagnóstico: renderiza todas las plantillas clave SIN enviar (detecta variables faltantes). */
 function _diag_renderEmails() {
+  assertAdmin('usar la función de diagnóstico _diag_renderEmails');
   const out = {};
   const person = getActivePersons().find(p => toBool(p.recibe_recordatorio_domingo) && getProjectsForOwner(p.person_id).length > 0)
               || getActivePersons()[0];
@@ -681,10 +693,10 @@ function _diag_renderEmails() {
   const ctxG = buildExecutiveContext(today(), false); ctxG.nombre_corto = 'el jefe operativo'; ctxG.is_jefe = false;
   out.lider = renderTemplate('email_exec_lider', ctxG).length;
   out.jueves = renderTemplate('email_recordatorio', buildThursdayContext(person.person_id)).length;
-  out.bienvenida = renderTemplate('email_bienvenida', {
+  out.bienvenida = renderTemplate('email_bienvenida', Object.assign(_ctxDiaEdicion(), {
     nombre_corto: 'X', nombre: 'X', rol: 'Analista', link_sheet: '#', link_manual: '#',
     support_email: 'persona@example.com'
-  }).length;
+  })).length;
   out.relevantes = renderTemplate('email_relevantes', {
     nombre_corto: 'X', nombre: 'X', today_display: fmtDateHuman(today()), support_email: 'persona@example.com',
     items: [{ tipo: 'Proyecto', proyecto: 'Proyecto de ejemplo', relevante: 'Se avanzó con la definición del alcance.', comentario: 'Buen trabajo, sigue así.' }]

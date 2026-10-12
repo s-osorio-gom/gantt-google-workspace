@@ -89,22 +89,42 @@ function isRecurringProject(projectId) {
  */
 function _ensureRecurringContainer() {
   let pid = getRecurringProjectId();
-  if (pid && getProjectById(pid)) return pid;
-  const existente = getAllProjects().find(p => String(p.nombre || '').indexOf('Recurrentes') >= 0);
-  if (existente) { setConfigValue('RECURRING_PROJECT_ID', existente.project_id); return existente.project_id; }
-  const adminEmail = String(getAdminEmails()[0] || '').toLowerCase();
-  const admin = getActivePersons().find(p => String(p.email || '').toLowerCase() === adminEmail) || getActivePersons()[0];
+  const actual = (pid && getProjectById(pid)) ||
+    getAllProjects().find(p => String(p.nombre || '').indexOf('Recurrentes') >= 0);
+  if (actual) {
+    if (String(actual.project_id) !== pid) setConfigValue_('RECURRING_PROJECT_ID', actual.project_id);
+    // Un contenedor sin responsable es un error CRÍTICO en 99_Validaciones (bloquea el
+    // viernes y el paso a PROD). Pasaba al correr «Completar configuración» antes de
+    // cargar personas; se repara en cuanto haya alguien.
+    if (!String(actual.owner_id || '').trim()) {
+      const dueno = _recContainerOwner();
+      if (dueno) setCellByHeader(SHEET_NAMES.PROYECTOS, actual._rowIndex, 'owner_id', dueno.person_id);
+    }
+    return actual.project_id;
+  }
+  const admin = _recContainerOwner();
+  if (!admin) {
+    throw new Error('Cargue al menos una persona (Admin → Agregar persona) antes de crear el proyecto ' +
+      'de recurrentes: necesita un responsable.');
+  }
   pid = nextId(SHEET_NAMES.PROYECTOS, 'project_id', 'PR', 3);
   const w = ganttWindow();
   appendRowByObject(SHEET_NAMES.PROYECTOS, {
-    project_id: pid, nombre: '🔁 Recurrentes', owner_id: admin ? admin.person_id : '',
+    project_id: pid, nombre: '🔁 Recurrentes', owner_id: admin.person_id,
     frente: 'EQUIPO', prioridad: 'Media', fecha_inicio: fmtDateISO(w.start), fecha_fin: fmtDateISO(w.end),
     objetivo: 'Contenedor de tareas recurrentes mensuales/semanales (Rebate, etc.)',
     link_drive: '', peso: 1, estado_manual: ''
   });
   _invalidateEntityCache(SHEET_NAMES.PROYECTOS);
-  setConfigValue('RECURRING_PROJECT_ID', pid);
+  setConfigValue_('RECURRING_PROJECT_ID', pid);
   return pid;
+}
+
+/** Responsable del contenedor: la persona del admin principal o, si no está en 01_Personas, la primera activa. */
+function _recContainerOwner() {
+  const adminEmail = String(getAdminEmails()[0] || '').toLowerCase();
+  const activas = getActivePersons();
+  return activas.find(p => String(p.email || '').toLowerCase() === adminEmail) || activas[0] || null;
 }
 
 /** Setup 1-vez: contenedor + hoja de plantillas + columna rec_source + config. */
@@ -113,13 +133,13 @@ function setupRecurrentes() {
   const rec = ensureRecColumn();
   const container = _ensureRecurringContainer();
   if (getConfig('RECURRING_TASKS_DAY') === undefined || String(getConfig('RECURRING_TASKS_DAY')).trim() === '') {
-    setConfigValue('RECURRING_TASKS_DAY', '1');
+    setConfigValue_('RECURRING_TASKS_DAY', '1');
   }
   return { container_project_id: container, rec_source_col: rec.added, tab: REC_TAB };
 }
 
 /* ============================================================================
- *  CRUD de plantillas (corre como el usuario; reglas de edición del jueves)
+ *  CRUD de plantillas (corre como el usuario; reglas del día de edición)
  * ============================================================================ */
 
 /** Lista de plantillas (para la UI). */
@@ -288,8 +308,10 @@ function _recInstanceStarts(freq, start, end, dias, winStart, winEnd) {
   const dom = S.getDate();
   const startMonday = _mondayOf(S);
   let d = new Date(lo);
+  // Tope de seguridad del bucle: la ventana del Gantt admite hasta 731 días
+  // (ganttWindow). Con 400 se cortaban las repeticiones del segundo año.
   let guard = 0;
-  while (d.getTime() <= hi.getTime() && guard < 400) {
+  while (d.getTime() <= hi.getTime() && guard < 800) {
     let hit = false;
     if (freq === 'mensual') {
       const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
@@ -412,6 +434,7 @@ function generateRecurringNow() { return generateRecurringTasks(); }
 
 /** Diagnóstico: fechas de repetición de una plantilla como texto (para clasp run / QA). */
 function _diag_recDates(recId) {
+  assertAdmin('usar la función de diagnóstico _diag_recDates');
   const occ = recurrenceOccurrencesFor(recId);
   return { n: occ.length, fechas: occ.map(d => fmtDateISO(d) + ' (' + _DIAS_SEM[d.getDay()] + ')').join(' · ') };
 }

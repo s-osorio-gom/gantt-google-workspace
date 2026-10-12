@@ -10,8 +10,8 @@
   <p class="subtitle" id="greeting"></p>
 
   <div class="info-box">
-    Este comentario aparece en <b>tu correo del lunes</b> y en los reportes ejecutivos del jefe operativo y el jefe del canal.<br>
-    Se borra automáticamente cada lunes después del envío para que la siguiente semana arranque vacío.
+    Este comentario aparece en los <b>reportes ejecutivos del viernes</b> que reciben tus jefes.<br>
+    Se borra automáticamente cada viernes después del envío para que la siguiente semana arranque vacío.
   </div>
 
   <label>Tu comentario para esta semana</label>
@@ -65,7 +65,7 @@ document.getElementById('btnSave').addEventListener('click', function(){
   google.script.run
     .withSuccessHandler(function(res){
       msg.className = 'msg ok';
-      msg.textContent = '✅ Guardado (' + res.length + ' caracteres). Va a aparecer en tu correo del próximo lunes.';
+      msg.textContent = '✅ Guardado (' + res.length + ' caracteres). Va a aparecer en el ejecutivo del próximo viernes.';
       btn.disabled = false; btn.textContent = 'Guardar';
     })
     .withFailureHandler(function(err){

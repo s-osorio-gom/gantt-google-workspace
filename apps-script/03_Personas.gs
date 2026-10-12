@@ -63,6 +63,18 @@ function ownerIdsToEmails(ownerIdsStr) {
 }
 
 /**
+ * ¿Es el «jefe del canal»? (recibe el ejecutivo con detalle por persona y califica
+ * la evaluación mensual). JEFE_CANAL_ID en 00_Config lo fija por person_id; vacía,
+ * se usa la convención heredada: P001 o un rol que contenga «canal».
+ */
+function esJefeCanal(p) {
+  if (!p) return false;
+  const id = String(getConfig('JEFE_CANAL_ID') || '').trim();
+  if (id) return String(p.person_id || '').trim() === id;
+  return String(p.person_id || '').trim() === 'P001' || String(p.rol || '').toLowerCase().indexOf('canal') >= 0;
+}
+
+/**
  * Agrega una persona nueva. Genera person_id, envía correo de bienvenida.
  * Llamado desde sidebar.
  */
@@ -106,7 +118,7 @@ function addPerson(payload) {
 
     // Enviar correo de bienvenida (respeta modo SANDBOX)
     if (!isBoss && getConfigBool('SEND_WELCOME_EMAIL', true)) {
-      try { sendWelcomeEmail(personId); }
+      try { sendWelcomeEmail_(personId); }
       catch (e) { logWarn('No se pudo enviar bienvenida: ' + e.message); }
     }
 

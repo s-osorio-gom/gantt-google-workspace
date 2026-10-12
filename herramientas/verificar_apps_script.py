@@ -12,6 +12,10 @@ lunes y el correo no sale. Esto adelanta lo comprobable:
     plantillas    cada renderTemplate('x') / include('x') tiene su x.html
     duplicados    ninguna función definida dos veces
     referencias   menús, disparadores y google.script.run apuntan a funciones que existen
+    admin         cada entrada del menú Admin llama assertAdmin() en el servidor
+    privadas      nada del cliente, menú o disparador apunta a una función privada (…_)
+    diagnóstico   _diag_* y _demo* llaman assertAdmin()
+    disparadores  los manejadores de disparadores llaman _assertDisparador()
     innerHTML     los paneles no concatenan datos sin esc() en innerHTML
     zona horaria  ninguna fecha usa una zona escrita a mano (sale de appsscript.json)
     manifiesto    appsscript.json es válido y declara sus permisos
@@ -35,7 +39,7 @@ from pathlib import Path
 
 # Cualquier literal que nombre una plantilla, la llame quien la llame. Buscar
 # solo las APIs de HtmlService deja fuera las que pasan por un helper propio
-# —aquí, `_sidebar('sidebar_add_task')`— y las reporta como huérfanas.
+# —aquí, `_sidebar('sidebar_relevante')`— y las reporta como huérfanas.
 REF_PLANTILLA = re.compile(r"""['"]((?:email|sidebar)_[A-Za-z0-9_\-]+)['"]""")
 DEF_FUNCION = re.compile(r"^\s*function\s+([A-Za-z_$][\w$]*)\s*\(", re.M)
 CORREO = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
@@ -45,6 +49,7 @@ INCLUDE = re.compile(r"""createHtmlOutputFromFile\(\s*['"]([^'"]+)['"]""")
 MENU = re.compile(r"""addItem\([^;]*?,\s*['"]([A-Za-z_$][\w$]*)['"]\s*\)""")
 TRIGGER = re.compile(r"""newTrigger\(\s*['"]([A-Za-z_$][\w$]*)['"]""")
 CALL_HELPER = re.compile(r"""\bcall\(\s*['"]([A-Za-z_$][\w$]*)['"]""")
+MENU_ADMIN = re.compile(r"""adminMenu\.addItem\([^;]*?,\s*['"]([A-Za-z_$][\w$]*)['"]\s*\)""")
 ZONA_FIJA = re.compile(r"""(?:formatDate\([^,()]+,\s*|inTimezone\(\s*)['"][A-Za-z]+/[A-Za-z_]+['"]""")
 
 # Dominios que sí pueden aparecer: son los de los ejemplos.
@@ -155,6 +160,68 @@ def _operando_seguro(op: str, texto: str, prof: int = 0) -> bool:
         if m:
             return all(_operando_seguro(o, texto, 1) for o in _partes(m.group(1), "+"))
     return False
+
+
+def solo_codigo(texto: str) -> str:
+    """JavaScript sin comentarios y con el contenido de las cadenas vaciado.
+
+    Para buscar llamadas como assertAdmin( sin que cuente una comentada
+    (// assertAdmin(…)) o escrita dentro de un texto. Conserva los saltos de
+    línea y las comillas, así que las llaves y los números de línea no cambian.
+    """
+    out, i, n = [], 0, len(texto)
+    while i < n:
+        c = texto[i]
+        if texto.startswith("//", i):
+            j = texto.find("\n", i)
+            i = n if j < 0 else j
+            continue
+        if texto.startswith("/*", i):
+            j = texto.find("*/", i + 2)
+            fin = n if j < 0 else j + 2
+            out.append("\n" * texto.count("\n", i, fin))
+            i = fin
+            continue
+        if c in "'\"`":
+            j = i + 1
+            while j < n and texto[j] != c:
+                if texto[j] == "\\":
+                    j += 1
+                elif texto[j] == "\n" and c != "`":
+                    break
+                j += 1
+            out.append(c + "\n" * texto.count("\n", i + 1, min(j, n)) + c)
+            i = j + 1
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def cuerpo_funcion(texto: str, nombre: str) -> str | None:
+    """Texto de `function nombre(...) { ... }` (llaves balanceadas, fuera de comillas)."""
+    m = re.search(r"^\s*function\s+" + re.escape(nombre) + r"\s*\(", texto, re.M)
+    if not m:
+        return None
+    i = texto.index("{", m.end())
+    prof, q, j = 0, None, i
+    while j < len(texto):
+        c = texto[j]
+        if q:
+            if c == "\\":
+                j += 1
+            elif c == q:
+                q = None
+        elif c in "'\"`":
+            q = c
+        elif c == "{":
+            prof += 1
+        elif c == "}":
+            prof -= 1
+            if prof == 0:
+                return texto[m.start():j + 1]
+        j += 1
+    return texto[m.start():]
 
 
 def innerhtml_inseguros(texto: str) -> list[str]:
@@ -294,6 +361,72 @@ def main() -> int:
             f"{len(rotas_fn)} rotas" if rotas_fn else "todas resuelven")
     for r in rotas_fn[:8]:
         print(f"        · {r}")
+
+    # ── menú Admin con control en el servidor ───────────────────────────────
+    # Ocultar el submenú no basta: cualquier función global se puede invocar con
+    # google.script.run desde un panel abierto. Cada manejador del submenú Admin
+    # debe llamar assertAdmin() él mismo.
+    # Sin comentarios ni contenido de cadenas: un assertAdmin() comentado o
+    # escrito dentro de un texto no cuenta.
+    todo_gs = solo_codigo("\n".join(f.read_text(encoding="utf-8") for f in gs))
+    manejadores = sorted({fn for f in gs for fn in MENU_ADMIN.findall(f.read_text(encoding="utf-8"))})
+    sin_control = [fn for fn in manejadores
+                   if "assertAdmin(" not in (cuerpo_funcion(todo_gs, fn) or "")]
+    revisar("Menú Admin comprueba admin en el servidor", bool(manejadores) and not sin_control,
+            "no se encontró adminMenu.addItem" if not manejadores else
+            (f"{len(sin_control)} de {len(manejadores)} sin assertAdmin()" if sin_control
+             else f"{len(manejadores)} / {len(manejadores)} con assertAdmin()"))
+    for fn in sin_control[:20]:
+        print(f"        · {fn}()")
+
+    # ── funciones privadas y de diagnóstico ─────────────────────────────────
+    # En Apps Script, una función que termina en «_» es privada: google.script.run,
+    # el menú y los disparadores no pueden llamarla. Las internas que envían correo
+    # o escriben configuración son privadas; nada externo debe apuntar a ellas.
+    privadas = []
+    for f in gs:
+        texto = f.read_text(encoding="utf-8")
+        for patron, que in ((MENU, "menú"), (TRIGGER, "disparador")):
+            privadas += [f"{f.name}: {que} → {fn}()" for fn in patron.findall(texto) if fn.endswith("_")]
+    for f in html:
+        texto = f.read_text(encoding="utf-8")
+        privadas += [f"{f.name}: google.script.run → {fn}()"
+                     for fn in funciones_run(texto) + CALL_HELPER.findall(texto) if fn.endswith("_")]
+    revisar("Menú, disparadores y paneles no apuntan a funciones privadas (…_)", not privadas,
+            f"{len(privadas)} referencias" if privadas else "ninguna")
+    for x in privadas[:8]:
+        print(f"        · {x}")
+
+    # Manejadores de disparadores: son públicos (un disparador no puede apuntar a
+    # una función privada), así que cualquiera con un panel abierto podría
+    # invocarlos. Deben empezar con _assertDisparador(). Exentos: los de eventos
+    # de edición (necesitan un evento real de Sheets) y autoRefreshDirty (solo
+    # refresca vistas que el equipo ya puede ver).
+    exentos = {"onSheetEdit", "onEvalSheetEdit", "onTaskEdit", "onEvaluationEdit", "autoRefreshDirty"}
+    manejadores_t = set()
+    for f in gs:
+        texto = f.read_text(encoding="utf-8")
+        manejadores_t.update(TRIGGER.findall(texto))
+        m = re.search(r"TRIGGER_HANDLERS\s*=\s*\[([^\]]*)\]", texto)
+        if m:
+            manejadores_t.update(re.findall(r"['\"]([A-Za-z_$][\w$]*)['\"]", m.group(1)))
+    revisables = sorted(fn for fn in manejadores_t - exentos if fn in donde)
+    sin_guardia = [fn for fn in revisables
+                   if "_assertDisparador(" not in (cuerpo_funcion(todo_gs, fn) or "")]
+    revisar("Manejadores de disparadores llaman _assertDisparador()", not sin_guardia,
+            f"{len(sin_guardia)} de {len(revisables)} sin _assertDisparador()" if sin_guardia
+            else f"{len(revisables)} / {len(revisables)}")
+    for fn in sin_guardia[:10]:
+        print(f"        · {fn}()")
+
+    # _diag_* y _demo* se corren desde el editor; son públicas, así que cualquiera
+    # con un panel abierto podría invocarlas. _demoFechas* sobrescribe fechas.
+    diag = sorted(fn for fn in donde if re.match(r"_(diag|demo)", fn) and not fn.endswith("_"))
+    diag_sin = [fn for fn in diag if "assertAdmin(" not in (cuerpo_funcion(todo_gs, fn) or "")]
+    revisar("Funciones _diag/_demo comprueban admin", not diag_sin,
+            f"{len(diag_sin)} de {len(diag)} sin assertAdmin()" if diag_sin else f"{len(diag)} / {len(diag)}")
+    for fn in diag_sin[:10]:
+        print(f"        · {fn}()")
 
     # ── innerHTML con datos sin escapar ─────────────────────────────────────
     # Los nombres de tareas, proyectos y personas los escribe el equipo. Pegarlos

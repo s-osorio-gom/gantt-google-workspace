@@ -32,7 +32,7 @@
     <div style="background:#E6EEF7;border-left:4px solid #1F4E8C;padding:16px 18px;border-radius:0 4px 4px 0;margin:0 0 18px">
       <table cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#243244;line-height:1.55">
         <tr><td style="padding:0 0 8px;vertical-align:top;width:22px">✔️</td><td style="padding:0 0 8px">¿Terminaste una tarea? Ve a <b>Proyectos y Tareas</b> y <b>marca la casilla</b> a la izquierda. El avance del proyecto sube solo.</td></tr>
-        <tr><td style="padding:0 0 8px;vertical-align:top">🗓️</td><td style="padding:0 0 8px"><b>Solo se puede actualizar los jueves</b>, hasta las <b>11:59 p.m.</b> Los demás días la hoja queda bloqueada.</td></tr>
+        <tr><td style="padding:0 0 8px;vertical-align:top">🗓️</td><td style="padding:0 0 8px"><? if (bloqueo_por_dia) { ?><b>Solo se puede actualizar los <?= dia_edicion ?></b>, hasta las <b>11:59 p.m.</b> Los demás días la hoja queda bloqueada.<? } else { ?>Puedes actualizar <b>cualquier día</b>; el recordatorio llega los <?= dia_edicion ?>.<? } ?></td></tr>
         <tr><td style="padding:0 0 8px;vertical-align:top">🍀</td><td style="padding:0 0 8px">Para <b>crear o editar</b> proyectos y tareas, usa el menú <b>🍀 EQUIPO › Editar proyectos y tareas</b>.</td></tr>
         <tr><td style="vertical-align:top">📝</td><td>Para contar un avance importante de la semana, usa <b>🍀 EQUIPO › Crear relevante</b>.</td></tr>
       </table>
@@ -40,8 +40,8 @@
 
     <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Los correos automáticos</h3>
     <table cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#243244;line-height:1.5">
-      <tr><td style="padding:0 0 8px;vertical-align:top;width:120px"><b>Jueves 8:30</b></td><td style="padding:0 0 8px">Te llega un recordatorio con <b>tus tareas pendientes</b> para que actualices antes de las 11:59 p.m.</td></tr>
-      <tr><td style="padding:0 0 8px;vertical-align:top"><b>Viernes 8:30</b></td><td style="padding:0 0 8px">Se envía el reporte de avance a <b>el jefe operativo y el jefe del canal</b> con lo cargado hasta el jueves.</td></tr>
+      <tr><td style="padding:0 0 8px;vertical-align:top;width:120px"><b><?= dia_edicion_cap ?> 8:30</b></td><td style="padding:0 0 8px">Te llega un recordatorio con <b>tus tareas pendientes</b> para que actualices antes de las 11:59 p.m.</td></tr>
+      <tr><td style="padding:0 0 8px;vertical-align:top"><b>Viernes 8:30</b></td><td style="padding:0 0 8px">Se envía el reporte de avance a <b>el jefe operativo y el jefe del canal</b> con lo cargado hasta ese momento.</td></tr>
     </table>
 
     <h3 style="font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#0F2D52;font-weight:700;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid #0F2D52">Evaluación mensual</h3>
@@ -74,7 +74,7 @@
   </td></tr>
 
   <tr><td style="background:#FAFAFB;color:#6B7280;font-size:11px;padding:18px 28px;border-top:1px solid #E5E7EB;line-height:1.6">
-    Sistema de Proyectos. Tú actualizas los jueves; los reportes salen solos.
+    Sistema de Proyectos. Tú actualizas los <?= dia_edicion ?>; los reportes salen solos.
   </td></tr>
 
 </table></td></tr></table>

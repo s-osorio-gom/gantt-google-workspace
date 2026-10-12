@@ -2,7 +2,9 @@
  * Triggers.gs — instalación / desinstalación de triggers automáticos.
  *
  * installAllTriggers() deja ocho (siete si no hay Sheet de evaluaciones):
- *   1. thursdayReminderJob      → jueves 8:30   (recordatorio al equipo)
+ *   1. thursdayReminderJob      → día EDIT_LOCK_DAY 8:30 (jueves por defecto; recordatorio al equipo)
+ *      Conserva el nombre «thursday» para no dejar huérfanos los disparadores ya instalados.
+ *      Si cambia EDIT_LOCK_DAY, reinstale los disparadores.
  *   2. fridayExecJob            → viernes 8:30  (foto semanal + ejecutivos)
  *   3. satRelevantesJob         → sábado 8:00   (relevantes comentados)
  *   4. dailyDispatcherMorning   → diario 8:30   (día 1: rollover + evaluación; día 1: recurrentes;
@@ -37,12 +39,14 @@ const TRIGGER_HANDLERS = [
  */
 function installAllTriggers() {
   assertAdmin('instalar los disparadores');
-  uninstallAllTriggers();
+  uninstallAllTriggers_();
   let n = 0;
 
-  // 1. Jueves 8:30 — recordatorio al equipo (plazo hoy 11:59 pm)
+  // 1. Día de edición (EDIT_LOCK_DAY, jueves por defecto) 8:30 — recordatorio al equipo
+  //    (plazo hoy 11:59 pm). Antes era siempre jueves aunque el día de edición fuera otro.
+  const diasTrigger = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   ScriptApp.newTrigger('thursdayReminderJob')
-    .timeBased().onWeekDay(ScriptApp.WeekDay.THURSDAY).atHour(8).nearMinute(30)
+    .timeBased().onWeekDay(ScriptApp.WeekDay[diasTrigger[editLockDay()]]).atHour(8).nearMinute(30)
     .inTimezone(tz()).create(); n++;
 
   // 2. Viernes 8:30 — ejecutivos al jefe operativo y el jefe del canal
@@ -97,7 +101,7 @@ function installAllTriggers() {
 /**
  * Desinstala todos los triggers manejados por el sistema.
  */
-function uninstallAllTriggers() {
+function uninstallAllTriggers_() {
   const triggers = ScriptApp.getProjectTriggers();
   let removed = 0;
   triggers.forEach(t => {
@@ -120,6 +124,7 @@ function uninstallAllTriggers() {
  * Snapshot pre-lunes (domingo 22:00). Solo genera snapshot, no envía.
  */
 function weeklySnapshotPre() {
+  _assertDisparador('weeklySnapshotPre');
   return withErrorAlert(() => generateSnapshot(), 'weeklySnapshotPre');
 }
 
@@ -127,29 +132,47 @@ function weeklySnapshotPre() {
  * Dispatcher diario (mañana 8:30): decide si es día 1 (eval mensual).
  */
 function dailyDispatcherMorning() {
+  _assertDisparador('dailyDispatcherMorning');
   return withErrorAlert(() => {
     const d = today();
-    const day = d.getDate();
+    // Un día fuera de 1–31 (0, negativo, 32, texto) no es un día del mes: se usa el defecto.
+    const esDia = (clave, defecto) => {
+      const v = getConfigInt(clave, defecto);
+      return _esDiaConfigurado(d, (v >= 1 && v <= 31) ? v : defecto);
+    };
     // Día 1 del mes → archivar completados del mes anterior + eval mensual
-    if (day === getConfigInt('MONTHLY_EVAL_DAY', 1)) {
-      try { monthlyRollover(); } catch (e) { logWarn('monthlyRollover: ' + e.message); }
-      monthlyEvalJob();
+    if (esDia('MONTHLY_EVAL_DAY', 1)) {
+      try { monthlyRollover_(); } catch (e) { logWarn('monthlyRollover_: ' + e.message); }
+      // monthlyEvalJob ya avisa al admin por correo si falla; que no corte lo que sigue.
+      try { monthlyEvalJob(); } catch (e) { logWarn('monthlyEvalJob: ' + e.message); }
     }
     // Día 1 (config RECURRING_TASKS_DAY): genera las tareas recurrentes del período. Idempotente.
-    if (day === getConfigInt('RECURRING_TASKS_DAY', 1)) {
+    if (esDia('RECURRING_TASKS_DAY', 1)) {
       try { generateRecurringTasks(); } catch (e) { logWarn('generateRecurringTasks: ' + e.message); }
     }
     // Día 4: envía a cada persona su evaluación (solo las que el jefe del canal ya calificó).
-    if (day === getConfigInt('PERSONAL_EVAL_SEND_DAY', 4)) {
-      try { sendPersonalEvalsDay4(); } catch (e) { logWarn('sendPersonalEvalsDay4: ' + e.message); }
+    if (esDia('PERSONAL_EVAL_SEND_DAY', 4)) {
+      try { sendPersonalEvalsDay4_(); } catch (e) { logWarn('sendPersonalEvalsDay4_: ' + e.message); }
     }
   }, 'dailyDispatcherMorning');
+}
+
+/**
+ * ¿Es `fecha` el día `dia` de su mes? Un día mayor que los del mes (29–31 en
+ * febrero, 31 en abril…) cae el último día. Antes MONTHLY_EVAL_DAY=31 no
+ * disparaba nunca en los meses cortos. (El dispatcher ya descarta valores fuera
+ * de 1–31 y usa el defecto; aquí, por robustez, < 1 cae el día 1.)
+ */
+function _esDiaConfigurado(fecha, dia) {
+  const ultimo = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
+  return fecha.getDate() === Math.min(Math.max(1, dia), ultimo);
 }
 
 /**
  * Dispatcher diario (tarde 16:00): motivacional.
  */
 function dailyDispatcherAfternoon() {
+  _assertDisparador('dailyDispatcherAfternoon');
   return withErrorAlert(() => motivationalJob(), 'dailyDispatcherAfternoon');
 }
 
@@ -157,7 +180,22 @@ function dailyDispatcherAfternoon() {
  * Jueves 8:30 — recordatorio personalizado al equipo (plazo hoy 11:59 pm).
  */
 function thursdayReminderJob() {
-  return withErrorAlert(() => sendThursdayReminders(), 'thursdayReminderJob');
+  _assertDisparador('thursdayReminderJob');
+  return withErrorAlert(() => {
+    // Si EDIT_LOCK_DAY cambió y no se reinstalaron los disparadores, este corre el
+    // día viejo: no se manda «tienes plazo hoy» un día en que no se puede editar.
+    const hoy = today().getDay();
+    if (hoy !== editLockDay()) {
+      const admin = getConfig('ADMIN_EMAIL');
+      const msg = 'El recordatorio corrió el ' + _DIAS_ES[hoy] + ', pero EDIT_LOCK_DAY es ' +
+        _DIAS_ES[editLockDay()] + '. No se envió. Reinstale los disparadores: menú 🍀 EQUIPO → ' +
+        'Admin → Instalar / reinstalar disparadores.';
+      logWarn(msg);
+      if (admin) { try { MailApp.sendEmail(admin, '[EQUIPO] Recordatorio en el día equivocado', msg); } catch (_) {} }
+      return { sent: 0, skipped: true };
+    }
+    return sendThursdayReminders_();
+  }, 'thursdayReminderJob');
 }
 
 /**
@@ -165,19 +203,21 @@ function thursdayReminderJob() {
  * comentario no se envían).
  */
 function satRelevantesJob() {
-  return withErrorAlert(() => enviarRelevantesComentados(), 'satRelevantesJob');
+  _assertDisparador('satRelevantesJob');
+  return withErrorAlert(() => enviarRelevantesComentados_(), 'satRelevantesJob');
 }
 
 /**
  * Viernes 8:30 — snapshot del cierre + correos ejecutivos al jefe operativo y el jefe del canal.
  */
 function fridayExecJob() {
+  _assertDisparador('fridayExecJob');
   return withErrorAlert(() => withLock(() => {
     const valid = runValidations();
     if (valid.critical > 0) throw new Error('Bloqueado: ' + valid.critical + ' errores críticos. Ver 99_Validaciones.');
     try { generateSnapshot(); } catch (e) { logWarn('snapshot viernes: ' + e.message); }
-    const exec = sendExecutiveReports();
-    try { clearWeeklyComments(); } catch (e) { logWarn('clearWeeklyComments: ' + e.message); }
+    const exec = sendExecutiveReports_();
+    try { clearWeeklyComments_(); } catch (e) { logWarn('clearWeeklyComments_: ' + e.message); }
     logInfo('=== fridayExecJob OK ejecutivos=' + exec.sent + ' ===');
     return { ejecutivos: exec.sent };
   }), 'fridayExecJob');
@@ -202,6 +242,7 @@ function onSheetEdit(e) {
  * Atajo desde menú para reinstalar triggers.
  */
 function reinstallTriggersFromMenu() {
+  assertAdmin('instalar los disparadores');
   const ui = SpreadsheetApp.getUi();
   const r = ui.alert('Reinstalar triggers', 'Esto borrará y volverá a crear los triggers automáticos. ¿Confirmas?', ui.ButtonSet.YES_NO);
   if (r !== ui.Button.YES) return;
