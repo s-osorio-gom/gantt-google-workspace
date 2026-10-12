@@ -161,6 +161,42 @@ def _operando_seguro(op: str, texto: str, prof: int = 0) -> bool:
     return False
 
 
+def solo_codigo(texto: str) -> str:
+    """JavaScript sin comentarios y con el contenido de las cadenas vaciado.
+
+    Para buscar llamadas como assertAdmin( sin que cuente una comentada
+    (// assertAdmin(…)) o escrita dentro de un texto. Conserva los saltos de
+    línea y las comillas, así que las llaves y los números de línea no cambian.
+    """
+    out, i, n = [], 0, len(texto)
+    while i < n:
+        c = texto[i]
+        if texto.startswith("//", i):
+            j = texto.find("\n", i)
+            i = n if j < 0 else j
+            continue
+        if texto.startswith("/*", i):
+            j = texto.find("*/", i + 2)
+            fin = n if j < 0 else j + 2
+            out.append("\n" * texto.count("\n", i, fin))
+            i = fin
+            continue
+        if c in "'\"`":
+            j = i + 1
+            while j < n and texto[j] != c:
+                if texto[j] == "\\":
+                    j += 1
+                elif texto[j] == "\n" and c != "`":
+                    break
+                j += 1
+            out.append(c + "\n" * texto.count("\n", i + 1, min(j, n)) + c)
+            i = j + 1
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
 def cuerpo_funcion(texto: str, nombre: str) -> str | None:
     """Texto de `function nombre(...) { ... }` (llaves balanceadas, fuera de comillas)."""
     m = re.search(r"^\s*function\s+" + re.escape(nombre) + r"\s*\(", texto, re.M)
@@ -329,7 +365,9 @@ def main() -> int:
     # Ocultar el submenú no basta: cualquier función global se puede invocar con
     # google.script.run desde un panel abierto. Cada manejador del submenú Admin
     # debe llamar assertAdmin() él mismo.
-    todo_gs = "\n".join(f.read_text(encoding="utf-8") for f in gs)
+    # Sin comentarios ni contenido de cadenas: un assertAdmin() comentado o
+    # escrito dentro de un texto no cuenta.
+    todo_gs = solo_codigo("\n".join(f.read_text(encoding="utf-8") for f in gs))
     manejadores = sorted({fn for f in gs for fn in MENU_ADMIN.findall(f.read_text(encoding="utf-8"))})
     sin_control = [fn for fn in manejadores
                    if "assertAdmin(" not in (cuerpo_funcion(todo_gs, fn) or "")]

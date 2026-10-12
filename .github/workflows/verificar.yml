@@ -19,3 +19,5 @@ jobs:
           python-version: "3.12"
       - name: Sintaxis, plantillas y duplicados
         run: python3 herramientas/verificar_apps_script.py apps-script
+      - name: Pruebas del propio verificador
+        run: python3 herramientas/pruebas_verificador.py

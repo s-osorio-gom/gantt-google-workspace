@@ -180,7 +180,10 @@ python3 herramientas/verificar_apps_script.py apps-script
 ```
 
 Sale con código 1 si algún chequeo crítico falla; el workflow
-`.github/workflows/verificar.yml` corre lo mismo en cada push y pull request.
+`.github/workflows/verificar.yml` corre lo mismo en cada push y pull request,
+y además `python3 herramientas/pruebas_verificador.py`, que arma proyectos de
+juguete para comprobar que los chequeos de permisos no se dejan engañar (un
+`assertAdmin()` comentado o dentro de una cadena no cuenta).
 El resultado no depende de la zona horaria de la máquina (las pruebas usan la
 de `appsscript.json`, como Apps Script).
 
