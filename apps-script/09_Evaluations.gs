@@ -215,7 +215,7 @@ function sendPersonalEvalsDay4_() {
   // En SANDBOX el correo va al admin, no a la persona: marcar la fila ENVIADO haría
   // que, ya en PROD, nunca le llegara. El log (separado por modo) evita repetirlo.
   const sandbox = isSandboxMode();
-  let sent = 0;
+  let sent = 0, yaEnviadas = 0;
   rows.forEach(fila => {
     try {
       const res = sendPersonalEvaluationEmail_(fila);
@@ -225,11 +225,19 @@ function sendPersonalEvalsDay4_() {
           if (!fila.fecha_evaluacion) setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'fecha_evaluacion', new Date());
         }
         sent++;
+      } else if (res && res.skipped && !sandbox) {
+        // El log ya tiene esta evaluación con el mismo contenido: o falló la marca
+        // tras enviarla, o el admin la devolvió a LISTO sin cambiarla. No se
+        // reenvía (sería un duplicado); para reenviar, cambie el comentario o la
+        // calificación. Se marca ENVIADO para que la fila diga la verdad.
+        setEvalCell(EVAL_SHEET_TAB, fila._rowIndex, 'estado', 'ENVIADO');
+        yaEnviadas++;
       }
     } catch (err) { logError('eval día 4: ' + err.message); }
   });
-  logInfo('Evaluaciones personales enviadas (día 4): ' + sent + ' de ' + rows.length);
-  return { sent: sent, candidatas: rows.length };
+  logInfo('Evaluaciones personales enviadas (día 4): ' + sent + ' de ' + rows.length +
+          (yaEnviadas ? ' (' + yaEnviadas + ' ya enviadas antes, sin cambios)' : ''));
+  return { sent: sent, candidatas: rows.length, ya_enviadas: yaEnviadas };
 }
 
 /** MUESTRA: envía a admin el correo de evaluación del jefe del canal (KPIs de todos) del mes anterior. */
@@ -274,6 +282,8 @@ function enviarEvaluacionesDesdeMenu() {
   const r = sendPersonalEvalsDay4_();
   SpreadsheetApp.getUi().alert('Evaluaciones enviadas',
     'Enviadas: ' + r.sent + ' de ' + r.candidatas + ' calificadas' +
+    (r.ya_enviadas ? '\n' + r.ya_enviadas + ' ya se habían enviado con el mismo contenido: no se reenvían. ' +
+      'Para reenviar una, cambie su comentario o calificación.' : '') +
     (isSandboxMode() ? '\n\n(SANDBOX: van al admin y no se marcan como enviadas; en PROD saldrán a cada persona)' : ''),
     SpreadsheetApp.getUi().ButtonSet.OK);
 }
@@ -325,7 +335,8 @@ function sendPersonalEvaluationEmail_(fila) {
     eventType: 'personal_eval',
     // Mes + huella de calificación y comentario: si el correo sale pero falla la marca
     // ENVIADO, el reintento lo detiene el log; si el jefe corrige la evaluación, la
-    // huella cambia y la corrección sí sale. (Antes, allowDuplicate:true en PROD.)
+    // huella cambia y la corrección sí sale. Devolver la fila a LISTO sin cambiarla
+    // NO la reenvía (no se distingue de un reintento). (Antes, allowDuplicate:true.)
     period: fila.year + '-' + String(fila.month).padStart(2, '0') + '#' +
             _huella(fila.calificacion_1_5 + '|' + String(fila.comentario_jefe || '').trim()),
     realToEmail: person.email,

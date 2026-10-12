@@ -241,4 +241,5 @@ Cuando los tres estén bien, `Admin → Modo PROD`. No deja pasar si
 | Falla al leer un Sheet privado | `EVAL_SHEET_ID` o `CONFIDENCIAL_SHEET_ID` vacío, o el archivo no está compartido con quien ejecuta. |
 | «Solo puedes actualizar los jueves» | Bloqueo por día (`EDIT_LOCK_*`). Admins y supervisores están exentos. |
 | Un disparador falla con «Solo un administrador puede ejecutar …» | `ADMIN_EMAIL` cambió y los disparadores siguen instalados por la cuenta anterior. Reinstálelos con la cuenta de `ADMIN_EMAIL`. |
+| «Enviadas: 0 … ya se habían enviado con el mismo contenido» | Devolvió una evaluación a `LISTO` sin cambiarla. No se reenvía (sería un duplicado); para reenviarla, cambie su comentario o su calificación. |
 | Error de permisos al instalar | La organización bloquea alcances de OAuth. Es cosa de TI, no del código. |

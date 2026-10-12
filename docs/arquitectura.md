@@ -146,7 +146,10 @@ tiempo, texto y comentario de cada uno (`rel-P002#…`, sin semana ni número de
 fila). Si el correo salió pero falló la marca de la fila, cualquier reintento
 posterior con el mismo contenido —el mismo día, otro sábado o con las filas
 reordenadas— lo detiene el log. Un contenido distinto (evaluación corregida,
-relevante o comentario nuevo) sí sale; en los relevantes, ese correo nuevo
+relevante o comentario nuevo) sí sale. Devolver una evaluación a `LISTO` sin
+cambiarla no la reenvía —no se distingue de un reintento—: la fila pasa a
+`ENVIADO` y el aviso del menú lo dice; para reenviarla, cambie su comentario o
+su calificación; en los relevantes, ese correo nuevo
 repite los del lote que no quedaron marcados. Sin cubrir: que `MailApp` envíe
 y la escritura del log falle en ese mismo instante. El periodo se compara como
 texto: Sheets convierte `2026-06` en fecha al guardarlo, y se normaliza al

@@ -702,6 +702,23 @@ prueba('Relevantes: filas que cambian de posición u orden no cambian la huella;
   igual(relevantesConMarcaFallida([['2026-11-07', [REL(5, 'a')]], ['2026-11-14', [REL(5, 'a'), REL(6, 'c', 'nuevo')]]]), 2);
 });
 
+// ── evaluación devuelta a LISTO sin cambios ────────────────────────────────
+// Decisión (intento 3): no se reenvía. Un reintento tras una marca fallida y una
+// vuelta manual a LISTO sin cambios son indistinguibles; reenviar reabriría el
+// duplicado. Para reenviar, el jefe cambia el comentario o la calificación.
+prueba('Evaluación en PROD devuelta a LISTO sin cambios: no se reenvía, queda ENVIADO y se informa', () => {
+  estado.config = { SYSTEM_MODE: 'PROD', ADMIN_EMAIL: 'admin@example.com' };
+  G('__datos.personas').push({ person_id: 'P002', nombre: 'Ana Pérez', email: 'ana@example.com', activo: true });
+  const fila = { _rowIndex: 2, year: 2026, month: 10, person_id: 'P002', calificacion_1_5: 4,
+                 comentario_jefe: 'Buen mes', estado: 'LISTO', fecha_evaluacion: 'x' };
+  const marcas = [], res = [];
+  const extra = { today: () => fecha('2026-11-04'), getActivePersons: () => G('__datos.personas'),
+    readEvalSheetAsObjects: () => ({ rows: [fila] }), setEvalCell: (t, f, col, v) => marcas.push(col + '=' + v) };
+  const t = conLogPersistente(() => res.push(G('sendPersonalEvalsDay4_')()));
+  t.ejecucion(extra); t.ejecucion(extra);
+  igual([t.correos.length, marcas, res[1].ya_enviadas], [1, ['estado=ENVIADO', 'estado=ENVIADO'], 1]);
+});
+
 console.log('\n  ' + '─'.repeat(56));
 console.log(`  ${total - fallos} / ${total} pruebas pasan\n`);
 process.exit(fallos ? 1 : 0);
